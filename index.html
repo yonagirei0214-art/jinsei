@@ -1,816 +1,2144 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="color-scheme" content="light dark" />
-<link rel="icon" href="data:," />
-<title>人生ゲーム</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ガチャ管理 - ライバーコントロール</title>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
-  :root{
-    --bg:#FFF6E3; --bg2:#FFEFC2;
-    --card:#FFFFFF; --card2:#FFFDF6;
-    --ink:#2B2118; --ink2:#6B5D4F; --line:#EADFC8;
-    --green:#1E9E4A; --green-d:#137333;
-    --red:#E14B32; --gold:#F5A800; --gold-bg:#FFECB3;
-    --blue:#2471A3; --pink:#D6336C; --teal:#0E7C6B;
-    --shadow:0 10px 30px rgba(90,60,10,.14);
-    --radius:18px;
-    --board-bg:#FDF3D3;
-  }
-  @media (prefers-color-scheme: dark){
-    :root{
-      --bg:#171310; --bg2:#211A14;
-      --card:#26201A; --card2:#2E2620;
-      --ink:#F7EEDC; --ink2:#C9BBA6; --line:#443A30;
-      --board-bg:#2A2118;
-      --shadow:0 10px 30px rgba(0,0,0,.4);
-    }
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0}
-  body{
-    font-family:"M PLUS Rounded 1c","Noto Sans JP",system-ui,sans-serif;
-    background:
-      radial-gradient(circle at 12% 8%, rgba(245,168,0,.16), transparent 340px),
-      radial-gradient(circle at 88% 90%, rgba(30,158,74,.12), transparent 380px),
-      var(--bg);
-    color:var(--ink);
-    min-height:100vh;
-  }
-  button{font-family:inherit;cursor:pointer}
-  input,select{font-family:inherit}
+:root{
+  --bg:#ECEFF4;--panel:#fff;--border:#D9DEE8;--border-glow:#17203A;
+  --ink:#17203A;--text:#17203A;--text-dim:#5E687C;
+  --red:#C8321F;--gold:#9A5B00;--cyan:#2653D9;--green:#188A5C;--pink:#E8412C;--sun:#FFC24B;
+  --font:'Zen Kaku Gothic New','Hiragino Sans','Yu Gothic',sans-serif;
+  --display:'Dela Gothic One','Zen Kaku Gothic New',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.55;min-height:100vh;-webkit-text-size-adjust:100%;}
+header{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:53px;background:var(--ink);color:#fff;position:sticky;top:0;z-index:100;}
+header h1{font-family:var(--display);font-weight:400;font-size:17px;letter-spacing:.02em;}
+.room-badge{display:flex;align-items:center;gap:8px;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.12);font-size:12px;font-weight:700;color:#fff;}
+.dot{width:8px;height:8px;border-radius:50%;background:#7B8499;}
+.room-badge.online .dot{background:#3DDC97;animation:blink 2s infinite;}
+.room-badge.reconnecting .dot{background:var(--sun);animation:blink .6s infinite;}
+@keyframes blink{50%{opacity:.35}}
+.app{display:grid;grid-template-columns:340px 1fr;height:calc(100vh - 53px);}
+.sidebar{background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;padding:4px 20px 24px;display:flex;flex-direction:column;min-height:0;}
+.main{overflow-y:auto;padding:20px 24px;min-height:0;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px;}
+.sidebar .card{background:none;border:0;border-bottom:1px solid var(--border);border-radius:0;padding:18px 0;margin:0;}
+.sidebar .card:last-child{border-bottom:0;}
+.card-title{font-size:14px;font-weight:900;margin-bottom:12px;display:flex;align-items:center;}
+input[type=text],input[type=number],input[type=color],textarea,select{width:100%;padding:9px 11px;background:#fff;border:1px solid #C5CCDA;border-radius:8px;color:var(--text);font-size:14px;font-family:var(--font);outline:none;transition:border-color .15s,box-shadow .15s;}
+input:focus,textarea:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(23,32,58,.12);}
+input[type=color]{padding:3px 5px;height:38px;cursor:pointer;}
+textarea{resize:none;min-height:58px;line-height:1.5;}
+label{display:block;font-size:12px;font-weight:700;color:var(--text-dim);margin-bottom:4px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.form-row3{display:grid;grid-template-columns:1fr 60px 80px;gap:8px;}
+.fg{margin-bottom:10px;}
+.btn{padding:9px 16px;border:1px solid transparent;border-radius:8px;font-family:var(--font);font-weight:700;font-size:13px;cursor:pointer;transition:background .15s,transform .1s;white-space:nowrap;}
+.btn:active{transform:scale(.98);}
+.btn-primary{background:var(--ink);color:#fff;}
+.btn-primary:hover{background:#2A3558;}
+.btn-gold{background:var(--pink);color:#fff;font-size:15px;}
+.btn-gold:hover{background:#D3361F;}
+.btn-danger{background:#fff;color:var(--red);border-color:#EBC0BA;padding:4px 9px;font-size:12px;}
+.btn-danger:hover{background:#FDECE9;}
+.btn-sm{padding:4px 10px;font-size:12px;}
+.btn-block{width:100%;padding:11px;margin-top:8px;}
+.btn-ghost{background:#fff;border-color:var(--border);color:var(--text-dim);font-size:12px;}
+.btn-ghost:hover{background:#F3F5F9;color:var(--text);}
+.icon-btn{background:none;border:0;cursor:pointer;color:var(--text-dim);font:700 12px var(--font);padding:2px 6px;}
+.icon-btn:hover{color:var(--red);}
+button:focus-visible,summary:focus-visible{outline:3px solid var(--cyan);outline-offset:2px;}
+.toggle-track{width:42px;height:24px;background:#C5CCDA;border-radius:12px;position:relative;transition:background .2s;}
+.toggle-track.on{background:var(--green);}
+.toggle-thumb{width:18px;height:18px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:left .2s;}
+.toggle-track.on .toggle-thumb{left:21px;}
+.error-note{font-size:12px;color:var(--red);background:#FDECE9;border-radius:8px;padding:8px 10px;margin-bottom:8px;}
+.flex{display:flex;}.gap-8{gap:8px;}.gap-4{gap:4px;}.mt-8{margin-top:8px;}.mt-4{margin-top:4px;}
+.empty{text-align:center;padding:22px;color:var(--text-dim);font-size:13px;}
+.tab-nav{display:flex;gap:22px;margin-bottom:16px;border-bottom:1px solid var(--border);}
+.tab-btn{padding:10px 2px;background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--text-dim);font:700 14px var(--font);cursor:pointer;}
+.tab-btn.active{color:var(--ink);border-bottom-color:var(--pink);}
+.tab-pane{display:none;}.tab-pane.active{display:block;}
+.stat-grid{display:flex;background:var(--panel);border:1px solid var(--border);border-radius:14px;margin-bottom:16px;}
+.stat-item{flex:1;padding:12px 16px;border-left:1px solid var(--border);}
+.stat-item:first-child{border-left:0;}
+.stat-val{font-family:var(--display);font-size:22px;line-height:1.25;}
+.stat-lbl{font-size:12px;color:var(--text-dim);}
+.room-id-display{font-family:var(--display);font-size:24px;letter-spacing:.12em;text-align:center;padding:14px;background:var(--ink);color:#fff;border-radius:10px;}
+.tbl{width:100%;border-collapse:collapse;}
+#listenerTableWrap{overflow-x:auto;}
+.tbl th{text-align:left;font-size:12px;font-weight:700;color:var(--text-dim);padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
+.tbl td{padding:9px 8px;font-size:13px;border-bottom:1px solid #EEF0F5;vertical-align:middle;}
+.tbl tr:hover td{background:#F7F8FB;}
+.spins-badge{display:inline-block;font-weight:900;font-variant-numeric:tabular-nums;background:#F0F3FA;border-radius:6px;padding:2px 9px;font-size:13px;}
+.status-on,.status-off{font-size:12px;white-space:nowrap;}
+.status-on{color:var(--green);font-weight:700;}
+.status-off{color:var(--text-dim);}
+.status-on::before,.status-off::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:currentColor;}
+.log-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:#F7F8FB;border-radius:8px;margin-bottom:6px;animation:slideIn .25s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.log-time{font-size:12px;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums;}
+.log-prize-name{font-weight:900;}
+.file-wrap{position:relative;}
+.file-wrap input[type=file]{opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer;}
+.file-display{padding:8px 11px;background:#F7F8FB;border:1px dashed #B5BDCE;border-radius:8px;color:var(--text-dim);font-size:13px;min-height:38px;display:flex;align-items:center;}
+.file-display.has-file{border-style:solid;border-color:var(--green);color:var(--green);font-weight:700;}
+.rarity-block{border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;background:#fff;}
+.rarity-header{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;user-select:none;}
+.rarity-header:hover{background:#F7F8FB;}
+.rarity-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
+.rarity-name{font-weight:900;font-size:14px;flex:1;}
+.rarity-rate-badge{font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;}
+.rarity-count{font-size:12px;color:var(--text-dim);}
+.rarity-body{padding:12px;border-top:1px solid var(--border);display:none;background:#FAFBFD;}
+.rarity-body.open{display:block;}
+.prize-entry{display:flex;align-items:center;gap:6px;padding:7px 9px;background:#fff;border:1px solid #EEF0F5;border-radius:6px;margin-bottom:5px;font-size:13px;}
+.prize-entry-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.prize-thumb{width:48px;height:48px;object-fit:contain;background:#F4F6FA;border:1px solid var(--border);border-radius:6px;cursor:zoom-in;flex-shrink:0;}
+.image-preview-box{display:none;margin-top:8px;padding:8px;border:1px dashed var(--border);border-radius:8px;background:#F8FAFD;}
+.image-preview-box img{display:block;max-width:100%;max-height:220px;object-fit:contain;margin:0 auto;border-radius:6px;cursor:zoom-in;}
+.image-preview-caption{font-size:11px;color:var(--text-dim);text-align:center;margin-top:4px;}
+.image-preview-modal{position:fixed;inset:0;z-index:9999;background:rgba(10,14,25,.88);display:none;align-items:center;justify-content:center;padding:18px;}
+.image-preview-modal.open{display:flex;}
+.image-preview-modal img{max-width:100%;max-height:88vh;object-fit:contain;border-radius:8px;}
+.image-preview-close{position:absolute;top:14px;right:14px;border:0;border-radius:999px;background:#fff;color:#17203A;font-size:22px;width:42px;height:42px;cursor:pointer;}
+.prize-tag{font-size:11px;padding:2px 7px;border-radius:4px;white-space:nowrap;background:#EEF2FD;color:var(--cyan);max-width:130px;overflow:hidden;text-overflow:ellipsis;}
+.tag-file{background:#EEF2FD;color:var(--cyan);}
+.tag-text{background:#FFF4D6;color:var(--gold);}
+.add-prize-form{border:1px dashed #B5BDCE;border-radius:8px;padding:12px;margin-top:8px;}
+.add-prize-title{font-size:12px;font-weight:700;color:var(--text-dim);margin-bottom:8px;}
+.rate-meter{margin-top:10px;}
+.rate-bar{height:6px;background:#E3E7EF;border-radius:3px;overflow:hidden;margin-top:6px;}
+.rate-fill{height:100%;border-radius:3px;transition:width .3s;}
+.rate-label{display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim);}
+.over{color:var(--red)!important;}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;z-index:9999;pointer-events:none;white-space:nowrap;}
+::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#C5CCDA;border-radius:3px;}
+.mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);z-index:200;padding-bottom:env(safe-area-inset-bottom,0);}
+.mob-nav-inner{display:flex;}
+.mob-btn{flex:1;padding:15px 4px;background:none;border:0;border-top:3px solid transparent;margin-top:-1px;color:var(--text-dim);font:700 13px var(--font);cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.mob-btn.active{color:var(--ink);border-top-color:var(--pink);}
+@media(max-width:767px){
+  body{overflow:hidden;}
+  header{padding:0 14px;}
+  header h1{font-size:15px;}
+  .room-badge{font-size:11px;padding:4px 10px;}
+  .app{display:block;height:calc(100vh - 53px - 52px - env(safe-area-inset-bottom,0px));height:calc(100dvh - 53px - 52px - env(safe-area-inset-bottom,0px));overflow:hidden;}
+  .sidebar{display:none;height:100%;overflow-y:auto;padding:4px 16px 24px;border-right:0;}
+  .sidebar.mob-active{display:flex;}
+  .main{display:none;height:100%;overflow-y:auto;padding:14px;}
+  .main.mob-active{display:block;}
+  .tab-nav{display:none;}
+  .form-row3{grid-template-columns:1fr;gap:6px;}
+  .stat-item{padding:10px 12px;}
+  .stat-val{font-size:18px;}
+  .mob-nav{display:block;}
+  input[type=text],input[type=number],input[type=color],textarea,select{font-size:16px;}
+  .toast{bottom:80px;}
+}
+@media(min-width:768px){
+  .sidebar{display:flex!important;}
+  .main{display:block!important;}
+  .mob-nav{display:none!important;}
+}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}}
 
-  /* ============ SETUP ============ */
-  .setup-wrap{max-width:760px;margin:0 auto;padding:28px 16px 60px}
-  .setup-hero{text-align:center;padding:18px 0 6px}
-  .game-logo{
-    display:inline-flex;align-items:center;gap:12px;
-  }
-  .logo-badge{
-    width:62px;height:62px;border-radius:18px;background:var(--green);color:#fff;
-    display:grid;place-items:center;font-size:30px;font-weight:900;
-    box-shadow:0 8px 0 #0E5E2A; transform:rotate(-4deg);
-  }
-  .setup-hero h1{font-size:clamp(38px,8vw,58px);margin:0;font-weight:900;letter-spacing:.02em;line-height:1}
-  .setup-hero h1 .accent{color:var(--red)}
-  .setup-hero p{color:var(--ink2);font-weight:700;margin:14px auto 0;max-width:520px;line-height:1.7;font-size:15px}
-  .setup-card{background:var(--card);border:2px solid var(--line);border-radius:24px;box-shadow:var(--shadow);padding:22px;margin-top:24px}
-  .setup-card h2{font-size:17px;margin:0 0 4px;font-weight:900}
-  .setup-card .hint{color:var(--ink2);font-size:13px;font-weight:600;margin:0 0 14px}
-  .count-row{display:flex;gap:8px;flex-wrap:wrap}
-  .count-btn{
-    flex:1;min-width:52px;padding:12px 0;border-radius:14px;border:2px solid var(--line);
-    background:var(--card2);font-size:20px;font-weight:900;color:var(--ink);
-  }
-  .count-btn small{display:block;font-size:11px;font-weight:700;color:var(--ink2)}
-  .count-btn.active{background:var(--ink);color:#FFF6E3;border-color:var(--ink)}
-  .count-btn.active small{color:#D8C9A8}
-  .player-rows{display:flex;flex-direction:column;gap:10px;margin-top:6px}
-  .player-row{display:flex;align-items:center;gap:10px;background:var(--card2);border:2px solid var(--line);border-radius:16px;padding:10px 12px}
-  .p-dot{width:38px;height:38px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff;font-weight:900;font-size:16px;border:3px solid rgba(255,255,255,.7);box-shadow:0 2px 8px rgba(0,0,0,.2)}
-  .player-row input[type=text]{flex:1;min-width:0;border:none;background:transparent;font-size:16px;font-weight:800;color:var(--ink);outline:none;padding:6px 2px}
-  .player-row input[type=text]::placeholder{color:var(--ink2);opacity:.6}
-  .player-row select{border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:8px 6px;font-weight:800;font-size:13px}
-  .start-btn{
-    width:100%;margin-top:20px;padding:18px;border:none;border-radius:18px;
-    background:var(--red);color:#fff;font-size:20px;font-weight:900;
-    box-shadow:0 6px 0 #A02718; letter-spacing:.04em;
-  }
-  .start-btn:active{transform:translateY(4px);box-shadow:0 2px 0 #A02718}
-  .howto{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
-  .howto div{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:14px;text-align:center}
-  .howto .n{width:30px;height:30px;margin:0 auto 8px;border-radius:50%;background:var(--gold-bg);color:#8D6E00;display:grid;place-items:center;font-weight:900}
-  .howto p{margin:0;font-size:12.5px;font-weight:700;color:var(--ink2);line-height:1.55}
-  .howto b{color:var(--ink)}
-  @media(max-width:560px){.howto{grid-template-columns:1fr}.howto div{text-align:left;display:flex;gap:12px;align-items:flex-start}.howto .n{margin:0;flex:none}}
+/* ===== PREMIUM GACHA UI OVERRIDE ===== */
+:root{
+  --bg:#090b12;--panel:#111522;--panel2:#171b2b;--border:#282e43;
+  --ink:#f5f7ff;--text:#eef1ff;--text-dim:#8f98b3;
+  --red:#ff3d71;--pink:#ff3d71;--gold:#ffc857;--cyan:#55b8ff;--green:#42e6a4;
+  --font:'Zen Kaku Gothic New','Hiragino Sans','Yu Gothic',sans-serif;
+  --display:'Dela Gothic One','Zen Kaku Gothic New',sans-serif;
+}
+body{
+  background:
+    radial-gradient(circle at 80% -10%,rgba(255,61,113,.16),transparent 30%),
+    radial-gradient(circle at 15% 20%,rgba(85,184,255,.09),transparent 28%),
+    #090b12;
+  color:var(--text);
+}
+header{
+  height:64px;padding:0 22px;
+  background:rgba(9,11,18,.86);backdrop-filter:blur(18px);
+  border-bottom:1px solid rgba(255,255,255,.08);
+  box-shadow:0 8px 30px rgba(0,0,0,.2);
+}
+header h1{font-size:18px;letter-spacing:.05em;text-shadow:0 0 24px rgba(255,61,113,.25)}
+.room-badge{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
+.app{grid-template-columns:350px 1fr;height:calc(100vh - 64px)}
+.sidebar{
+  background:rgba(13,16,27,.92);border-right:1px solid rgba(255,255,255,.07);
+  padding:10px 18px 28px;
+}
+.main{padding:24px 28px;background:transparent}
+.card{
+  background:linear-gradient(145deg,rgba(25,29,45,.96),rgba(14,17,29,.96));
+  border:1px solid rgba(255,255,255,.075);
+  border-radius:18px;box-shadow:0 12px 35px rgba(0,0,0,.18);
+}
+.sidebar .card{background:transparent;border:0;border-bottom:1px solid rgba(255,255,255,.07);box-shadow:none}
+.card-title{color:#fff;letter-spacing:.02em}
+input[type=text],input[type=number],input[type=color],textarea,select{
+  background:#0b0e17;border:1px solid #30374d;color:#f4f6ff;border-radius:10px;
+}
+input:focus,textarea:focus,select:focus{border-color:var(--pink);box-shadow:0 0 0 3px rgba(255,61,113,.13)}
+label{color:#8f98b3}
+.btn{border-radius:10px}
+.btn-primary{
+  background:linear-gradient(135deg,#252c43,#171b2b);
+  border:1px solid rgba(255,255,255,.1);color:#fff;
+  box-shadow:0 5px 16px rgba(0,0,0,.18)
+}
+.btn-primary:hover{background:linear-gradient(135deg,#303953,#1c2133)}
+.btn-gold{
+  background:linear-gradient(135deg,#ff4d7d,#d92257);
+  box-shadow:0 8px 25px rgba(255,61,113,.25)
+}
+.btn-danger{background:rgba(255,61,113,.06);border-color:rgba(255,61,113,.35);color:#ff7598}
+.btn-ghost{background:#151a29;border-color:#30374d;color:#b7bfd5}
+.stat-grid{
+  background:rgba(17,21,34,.88);border-color:rgba(255,255,255,.075);
+  box-shadow:0 14px 35px rgba(0,0,0,.18);overflow:hidden
+}
+.stat-item{border-color:rgba(255,255,255,.07);padding:15px 18px}
+.stat-val{color:#fff;text-shadow:0 0 20px rgba(255,255,255,.12)}
+.stat-lbl{color:#7e88a4}
+.room-id-display{
+  background:linear-gradient(135deg,#1d2337,#0d101a);
+  border:1px solid rgba(255,255,255,.1);box-shadow:inset 0 0 35px rgba(255,61,113,.06)
+}
+.tab-nav{border-bottom-color:rgba(255,255,255,.08)}
+.tab-btn{color:#7e88a4}
+.tab-btn.active{color:#fff;border-bottom-color:var(--pink)}
+.tbl th{color:#7e88a4;border-bottom-color:#292f43}
+.tbl td{border-bottom-color:#202537}
+.tbl tr:hover td{background:rgba(255,255,255,.025)}
+.rarity-block{background:#111522;border-color:#2a3044;box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.rarity-header:hover{background:#171c2c}
+.rarity-body{background:#0d111c;border-top-color:#272d40}
+.prize-entry{background:#151a28;border-color:#252b3e}
+.add-prize-form{border-color:#343b51;background:rgba(255,255,255,.015)}
+.file-display{background:#0d111b;border-color:#384057}
+.log-item{background:#151a28}
+.spins-badge{background:#1b2132;color:#fff}
+.mob-nav{background:#0e121d;border-top-color:#272d40}
+.mob-btn{color:#7e88a4}.mob-btn.active{color:#fff;border-top-color:var(--pink)}
+.toast{background:#fff;color:#10131d;box-shadow:0 8px 30px rgba(0,0,0,.3)}
+::-webkit-scrollbar-thumb{background:#394157}
 
-  /* ============ GAME LAYOUT ============ */
-  .game-wrap{max-width:1280px;margin:0 auto;padding:14px 14px 40px}
-  .topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-  .turn-banner{
-    flex:1;min-width:220px;display:flex;align-items:center;gap:12px;
-    background:var(--card);border:2px solid var(--line);border-radius:16px;padding:10px 14px;box-shadow:var(--shadow);
-  }
-  .turn-banner .p-dot{width:44px;height:44px;font-size:19px}
-  .turn-banner .t1{font-size:12px;font-weight:800;color:var(--ink2)}
-  .turn-banner .t2{font-size:18px;font-weight:900;line-height:1.2}
-  .ghost-btn{border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:11px 14px;font-weight:800;font-size:13px}
-  .layout{display:grid;grid-template-columns:minmax(0,1fr) 348px;gap:14px;align-items:start}
-  @media(max-width:960px){.layout{grid-template-columns:1fr}}
 
-  /* Board */
-  .board-card{background:var(--card);border:2px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:14px}
-  .board{
-    display:grid;grid-template-columns:repeat(10,1fr);gap:6px;
-    background:var(--board-bg);border-radius:16px;padding:8px;
-    background-image:radial-gradient(rgba(180,140,40,.13) 1.5px, transparent 1.5px);background-size:22px 22px;
+/* ===== MOBILE NAV SAFE-AREA FIX ===== */
+@media(max-width:767px){
+  html,body{height:100%;min-height:100%;}
+  body{overflow:hidden;}
+  header{height:64px;min-height:64px;}
+  .app{
+    display:block;
+    height:calc(100dvh - 64px - 52px - env(safe-area-inset-bottom,0px));
+    max-height:calc(100dvh - 64px - 52px - env(safe-area-inset-bottom,0px));
+    min-height:0;overflow:hidden;
   }
-  .tile{
-    position:relative;border-radius:12px;min-height:76px;padding:6px 4px 4px;
-    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;
-    border:2px solid rgba(0,0,0,.07);overflow:visible;
+  .sidebar,.main{
+    height:100%;min-height:0;max-height:100%;
+    padding-bottom:24px;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
   }
-  .tile .mark{font-size:17px;font-weight:900;line-height:1;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.75);margin-bottom:3px}
-  @media (prefers-color-scheme: dark){.tile .mark{background:rgba(0,0,0,.3)}}
-  .tile .lbl{font-size:10px;font-weight:800;line-height:1.3;word-break:keep-all}
-  .tile .amt{font-size:9.5px;font-weight:900;opacity:.85}
-  .tile.stop{outline:3px solid var(--ink);outline-offset:-3px}
-  .tile.stop::after{content:"STOP";position:absolute;top:-8px;right:-4px;background:var(--ink);color:#FFF6E3;font-size:8px;font-weight:900;padding:2px 6px;border-radius:99px;letter-spacing:.06em}
-  .t-plus{background:#DDF3D8}.t-minus{background:#FFE1D9}.t-salary{background:#FFECB3}
-  .t-job{background:#D8EBFA}.t-marriage{background:#FBDCE8}.t-child{background:#FFE9C7}
-  .t-house{background:#D3F0E8}.t-special{background:#FFF3B0}.t-start{background:#1E9E4A;color:#fff}
-  .t-goal{background:#F5A800;color:#3D2B00}.t-normal{background:#FFFDF4}
-  @media (prefers-color-scheme: dark){
-    .t-plus{background:#23402A}.t-minus{background:#4A2A24}.t-salary{background:#4D3E12}
-    .t-job{background:#22384A}.t-marriage{background:#472634}.t-child{background:#47351A}
-    .t-house{background:#1E3B35}.t-special{background:#4A4014}.t-normal{background:#332B22}
+  .sidebar.mob-active,.main.mob-active{overflow-y:auto;}
+  .mob-nav{
+    display:block;position:fixed;left:0;right:0;bottom:0;
+    height:calc(52px + env(safe-area-inset-bottom,0px));
+    padding:0 0 env(safe-area-inset-bottom,0px);
+    box-sizing:border-box;z-index:500;
+    isolation:isolate;
   }
-  .deco{display:grid;place-items:center;font-size:20px;opacity:.35;min-height:76px}
-  .tokens{position:absolute;left:2px;right:2px;bottom:3px;display:flex;flex-wrap:wrap;gap:2px;justify-content:center;pointer-events:none}
-  .token{
-    width:20px;height:20px;border-radius:50%;color:#fff;font-size:11px;font-weight:900;
-    display:grid;place-items:center;border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.35);
-    transition:transform .2s;
+  .mob-nav-inner{height:52px;min-height:52px;display:flex;}
+  .mob-btn{
+    position:relative;z-index:1;min-width:0;min-height:52px;height:52px;
+    padding:10px 4px;touch-action:manipulation;pointer-events:auto;
   }
-  .token.hop{animation:hop .32s ease}
-  @keyframes hop{40%{transform:translateY(-12px) scale(1.2)}}
-  .tile.current-land{animation:land .5s ease}
-  @keyframes land{0%{transform:scale(1)}40%{transform:scale(1.07)}100%{transform:scale(1)}}
-  @media(max-width:640px){
-    .tile{min-height:58px;border-radius:9px;padding:4px 1px 2px}
-    .tile .mark{width:22px;height:22px;font-size:12px}
-    .tile .lbl{font-size:8px;word-break:break-all}.tile .amt{display:none}
-    .token{width:15px;height:15px;font-size:8.5px;border-width:1.5px}
-    .deco{min-height:58px;font-size:14px}
-    .board{gap:4px;padding:5px}
-  }
+}
 
-  /* Side panel */
-  .side{display:flex;flex-direction:column;gap:14px}
-  .panel{background:var(--card);border:2px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:16px}
-  .panel h3{margin:0 0 12px;font-size:14px;font-weight:900;letter-spacing:.03em}
-  .roulette-box{text-align:center}
-  .wheel-wrap{position:relative;width:196px;height:196px;margin:2px auto 6px}
-  .wheel-pointer{position:absolute;top:-8px;left:50%;transform:translateX(-50%);z-index:3;width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-top:22px solid var(--red);filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
-  .wheel{
-    width:196px;height:196px;border-radius:50%;border:7px solid var(--ink);
-    background:conic-gradient(#F6C453 0 60deg,#7BC96F 60deg 120deg,#5DADE2 120deg 180deg,#EC7FA8 180deg 240deg,#F19468 240deg 300deg,#A78BDB 300deg 360deg);
-    position:relative;transition:transform 2.6s cubic-bezier(.12,.72,.08,1);
-  }
-  .wheel .wnum{position:absolute;font-weight:900;font-size:23px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.4);transform:translate(-50%,-50%)}
-  .wheel-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:64px;height:64px;border-radius:50%;background:var(--card);border:4px solid var(--ink);display:grid;place-items:center;font-size:26px;font-weight:900;z-index:2}
-  .spin-btn{
-    width:100%;padding:16px;border:none;border-radius:16px;margin-top:8px;
-    background:var(--green);color:#fff;font-size:18px;font-weight:900;box-shadow:0 5px 0 var(--green-d);
-  }
-  .spin-btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--green-d)}
-  .spin-btn:disabled{background:#B9AE9C;box-shadow:0 5px 0 #948A78;cursor:not-allowed}
-  .result-banner{min-height:26px;font-weight:900;font-size:15px;margin-top:10px}
-  .result-banner.good{color:var(--green-d)} .result-banner.bad{color:var(--red)}
-  @media (prefers-color-scheme: dark){.result-banner.good{color:#7BC96F}}
-
-  .pcard{border:2px solid var(--line);border-radius:16px;padding:11px 12px;margin-bottom:9px;background:var(--card2);position:relative}
-  .pcard.turn{border-color:var(--ink);box-shadow:0 0 0 2px var(--gold-bg)}
-  .pcard.done{opacity:.75}
-  .pcard .row1{display:flex;align-items:center;gap:9px}
-  .pcard .p-dot{width:34px;height:34px;font-size:14px}
-  .pcard .nm{font-weight:900;font-size:15px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .pcard .money{font-weight:900;font-size:15px;font-variant-numeric:tabular-nums}
-  .pcard .money.neg{color:var(--red)}
-  .pcard .meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
-  .chip{font-size:11px;font-weight:800;background:var(--bg2);border:1.5px solid var(--line);color:var(--ink2);padding:3px 8px;border-radius:99px}
-  .chip b{color:var(--ink)}
-  .done-tag{position:absolute;top:-9px;right:10px;background:var(--gold);color:#3D2B00;font-size:10px;font-weight:900;padding:2px 9px;border-radius:99px}
-
-  .log{max-height:230px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;font-size:12.5px;font-weight:600}
-  .log div{padding:7px 10px;background:var(--card2);border:1.5px solid var(--line);border-radius:10px;line-height:1.5}
-  .log div:first-child{border-color:var(--gold);background:var(--gold-bg);color:#4A3800}
-  @media (prefers-color-scheme: dark){.log div:first-child{color:#FFE9A8}}
-
-  /* Modal */
-  .modal-bg{position:fixed;inset:0;background:rgba(30,20,5,.55);backdrop-filter:blur(3px);display:none;place-items:center;z-index:50;padding:16px}
-  .modal-bg.open{display:grid}
-  .modal{background:var(--card);border-radius:24px;max-width:520px;width:100%;padding:26px 22px;box-shadow:0 24px 60px rgba(0,0,0,.35);max-height:88vh;overflow-y:auto;animation:pop .25s ease}
-  @keyframes pop{from{transform:scale(.92);opacity:0}}
-  .modal .m-mark{font-size:40px;text-align:center}
-  .modal h2{margin:8px 0 6px;text-align:center;font-size:23px;font-weight:900}
-  .modal .m-desc{text-align:center;color:var(--ink2);font-weight:700;line-height:1.7;font-size:14px;margin:0 0 16px}
-  .choice-grid{display:flex;flex-direction:column;gap:10px}
-  .choice{
-    border:2.5px solid var(--line);background:var(--card2);border-radius:16px;padding:14px 16px;text-align:left;width:100%;
-    display:flex;align-items:center;gap:12px;color:var(--ink);
-  }
-  .choice:hover{border-color:var(--gold)}
-  .choice .c-main{flex:1}
-  .choice .c-title{font-weight:900;font-size:16px}
-  .choice .c-sub{font-size:12.5px;font-weight:700;color:var(--ink2);margin-top:2px}
-  .choice .c-price{font-weight:900;font-size:15px;white-space:nowrap}
-  .modal .ok-btn{width:100%;padding:15px;border:none;border-radius:14px;background:var(--ink);color:#FFF6E3;font-size:16px;font-weight:900;margin-top:6px}
-  .rank-row{display:flex;align-items:center;gap:11px;padding:11px 12px;border:2px solid var(--line);border-radius:14px;margin-bottom:8px;background:var(--card2)}
-  .rank-row.first{border-color:var(--gold);background:var(--gold-bg);color:#4A3800}
-  @media (prefers-color-scheme: dark){.rank-row.first{color:#FFE9A8}}
-  .rank-num{width:32px;height:32px;border-radius:50%;background:var(--ink);color:#FFF6E3;display:grid;place-items:center;font-weight:900;flex:none}
-  .rank-row .r-nm{font-weight:900;flex:1;min-width:0}
-  .rank-row .r-detail{font-size:11px;font-weight:700;opacity:.75}
-  .rank-row .r-total{font-weight:900;font-size:16px;white-space:nowrap;font-variant-numeric:tabular-nums}
-  .confetti{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden;display:none}
-  .confetti.on{display:block}
-  .confetti i{position:absolute;top:-20px;width:10px;height:16px;border-radius:2px;animation:fall linear forwards}
-  @keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
-  @media (prefers-reduced-motion: reduce){
-    .wheel{transition:none}.token.hop,.tile.current-land,.modal{animation:none}
-  }
+</style>
+<style>
+@media(max-width:767px){
+  .mob-nav-inner{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .mob-nav-inner::-webkit-scrollbar{display:none;}
+  .mob-btn{flex:1 0 auto!important;padding:10px 14px!important;white-space:nowrap;}
+}
 </style>
 </head>
 <body>
+<header>
+  <h1>ガチャ管理</h1>
+  <div class="room-badge" id="roomBadge"><div class="dot"></div><span id="roomBadgeText">オフライン</span></div>
+</header>
 
-<!-- ================= SETUP ================= -->
-<div class="setup-wrap" id="setupView">
-  <div class="setup-hero">
-    <div class="game-logo">
-      <div class="logo-badge">人</div>
-      <h1>人生<span class="accent">ゲーム</span></h1>
-    </div>
-    <p>ルーレットを回してマスを進み、就職・結婚・子育て・マイホームを経てゴールを目指そう。ゴール時の総資産がいちばん多い人の勝ち。2〜8人で遊べます。</p>
+<nav class="mob-nav">
+  <div class="mob-nav-inner">
+    <button class="mob-btn active" id="mobt-settings" onclick="switchMobTab('settings')">設定</button>
+    <button class="mob-btn" id="mobt-room" onclick="switchMobTab('room')">ルーム</button>
+    <button class="mob-btn" id="mobt-manage" onclick="switchMobTab('manage')">リスナー</button>
+    <button class="mob-btn" id="mobt-log" onclick="switchMobTab('log')">ログ</button>
+    <button class="mob-btn" id="mobt-ach" onclick="switchMobTab('ach')">達成配布型</button>
+    <button class="mob-btn" id="mobt-goods" onclick="switchMobTab('goods')">リアグ在庫</button>
+    <button class="mob-btn" id="mobt-help" onclick="switchMobTab('help')">使い方</button>
   </div>
+</nav>
 
-  <div class="setup-card">
-    <h2>プレイヤーの人数</h2>
-    <p class="hint">一緒に遊ぶ人数を選んでください（最大8人）</p>
-    <div class="count-row" id="countRow"></div>
-  </div>
-
-  <div class="setup-card">
-    <h2>プレイヤー設定</h2>
-    <p class="hint">名前を入れてね。「ボット」にするとコンピュータが自動で進めます。1台の画面をみんなで回して遊ぶ形式です。</p>
-    <div class="player-rows" id="playerRows"></div>
-    <button class="start-btn" id="startBtn">ゲームスタート ▶</button>
-  </div>
-
-  <div class="howto">
-    <div><div class="n">1</div><p><b>ルーレットを回す</b><br>出た目の数だけコマが進みます。給料日マスを通るとお給料が入ります。</p></div>
-    <div><div class="n">2</div><p><b>STOPマスは必ず止まる</b><br>職業・結婚・マイホームのマスは、目が余っても必ずストップします。</p></div>
-    <div><div class="n">3</div><p><b>ゴールで総資産勝負</b><br>所持金＋家の売却額＋子供ボーナス＋ゴール順位ボーナスで順位が決まります。</p></div>
-  </div>
-</div>
-
-<!-- ================= GAME ================= -->
-<div class="game-wrap" id="gameView" hidden>
-  <div class="topbar">
-    <div class="turn-banner">
-      <div class="p-dot" id="turnDot">1</div>
-      <div>
-        <div class="t1" id="turnSub">1ターン目</div>
-        <div class="t2" id="turnName">— の番です</div>
+<div class="app">
+  <div class="sidebar">
+    <div class="card">
+      <div class="card-title">ガチャ設定</div>
+      <div class="fg">
+        <label>1回あたりのコスト (Pt)</label>
+        <input type="number" id="costPerSpin" value="100" min="1" style="font-family:var(--display);color:var(--gold);text-align:center;font-size:18px;">
       </div>
-    </div>
-    <button class="ghost-btn" id="rulesBtn">遊び方</button>
-    <button class="ghost-btn" id="restartBtn">最初からやり直す</button>
-  </div>
-
-  <div class="layout">
-    <div class="board-card">
-      <div class="board" id="board"></div>
-    </div>
-
-    <aside class="side">
-      <div class="panel roulette-box">
-        <h3>ルーレット</h3>
-        <div class="wheel-wrap">
-          <div class="wheel-pointer"></div>
-          <div class="wheel" id="wheel"></div>
-          <div class="wheel-center" id="wheelCenter">?</div>
+      <div class="fg" style="margin-bottom:0;">
+        <label>ボーナス（任意・空欄で無効）</label>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--text-dim);">
+          <input type="number" id="bonusEvery" placeholder="例: 10" min="1" style="width:64px;text-align:center;padding:7px 4px;">
+          <span>回ごとに</span>
+          <input type="number" id="bonusFree" placeholder="例: 1" min="1" style="width:64px;text-align:center;padding:7px 4px;">
+          <span>回無料</span>
         </div>
-        <button class="spin-btn" id="spinBtn">ルーレットを回す</button>
-        <div class="result-banner" id="resultBanner"></div>
+        <p id="bonusError" style="font-size:10px;color:var(--red);margin-top:4px;display:none;">「無料回数」は「○回ごと」より小さい数にしてください</p>
+        <p style="font-size:10px;color:var(--text-dim);margin-top:2px;">※ 各リスナーの累計消化回数に対して適用されます</p>
       </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+        <span style="font-size:13px;color:var(--text-dim);">PIN認証</span>
+        <div style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;" onclick="togglePinAuth()">
+          <span id="pinToggleLabel" style="font-size:11px;color:var(--text-dim);">オフ</span>
+          <div class="toggle-track" id="pinToggleTrack"><div class="toggle-thumb"></div></div>
+        </div>
+      </div>
+    </div>
 
-      <div class="panel">
-        <h3>プレイヤー</h3>
-        <div id="playerList"></div>
+    <div class="card">
+      <div class="card-title">レアリティ設定</div>
+      <div class="form-row3" style="margin-bottom:6px;">
+        <div class="fg" style="margin-bottom:0;"><label>名前</label><input type="text" id="rName" placeholder="例: SSR"></div>
+        <div class="fg" style="margin-bottom:0;"><label>色</label><input type="color" id="rColor" value="#ff0080"></div>
+        <div class="fg" style="margin-bottom:0;"><label>排出率%</label><input type="number" id="rRate" placeholder="5" min="0.1" max="100" step="0.1"></div>
       </div>
+      <button class="btn btn-primary btn-block" style="margin-top:4px;" onclick="addRarity()">＋ レアリティを追加</button>
+      <div class="rate-meter">
+        <div class="rate-label"><span>合計排出率</span><span id="totalRateText">0%</span></div>
+        <div class="rate-bar"><div class="rate-fill" id="rateFill" style="width:0%"></div></div>
+      </div>
+    </div>
 
-      <div class="panel">
-        <h3>できごとログ</h3>
-        <div class="log" id="log"></div>
+    <div class="card">
+      <div class="card-title">レアリティ一覧</div>
+      <div id="rarityList"><div class="empty">レアリティがありません</div></div>
+    </div>
+
+    <div class="card" id="featureTogglesCard">
+      <div class="card-title">追加機能 ON / OFF</div>
+      <p style="font-size:10px;color:var(--text-dim);margin-bottom:10px;">図鑑以外の追加機能を個別に切り替えます。</p>
+      <label style="display:flex;align-items:center;gap:8px;color:var(--text);margin-bottom:8px;"><input id="featureInventory" type="checkbox" checked onchange="setFeature('inventory',this.checked)" style="width:17px;height:17px;">景品在庫管理</label>
+      <label style="display:flex;align-items:center;gap:8px;color:var(--text);margin-bottom:8px;"><input id="featureUnique" type="checkbox" onchange="setFeature('unique',this.checked)" style="width:17px;height:17px;">リスナーごとの重複防止</label>
+      <label style="display:flex;align-items:center;gap:8px;color:var(--text);margin-bottom:8px;"><input id="featureLastOne" type="checkbox" checked onchange="setFeature('lastOne',this.checked)" style="width:17px;height:17px;">ラストワン賞機能</label>
+      <label style="display:flex;align-items:center;gap:8px;color:var(--text);margin-bottom:8px;"><input id="featurePresets" type="checkbox" checked onchange="setFeature('eventPresets',this.checked)" style="width:17px;height:17px;">イベント保存・切り替え</label>
+      <label style="display:flex;align-items:center;gap:8px;color:var(--text);margin-bottom:0;"><input id="featureGauge" type="checkbox" checked onchange="setFeature('eventGauge',this.checked)" style="width:17px;height:17px;">全員参加型共有ゲージ</label>
+    </div>
+
+    <div class="card" id="inventoryRulesCard">
+      <div class="card-title">在庫・ラストワン設定</div>
+      <label style="display:flex;align-items:center;gap:8px;color:var(--text);margin-bottom:10px;">
+        <input id="uniquePerListener" type="checkbox" onchange="applyPrizeRules()" style="width:17px;height:17px;">
+        同じリスナーの景品重複を禁止
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;color:var(--text);margin-bottom:8px;">
+        <input id="lastOneEnabled" type="checkbox" onchange="applyPrizeRules()" style="width:17px;height:17px;">
+        在庫を使い切ったらラストワン賞
+      </label>
+      <div class="fg"><label>ラストワン賞の名前</label><input type="text" id="lastOneName" value="ラストワン賞" maxlength="80"></div>
+      <div class="fg" style="margin-bottom:0;"><label>ラストワン賞メッセージ</label><textarea id="lastOneText" rows="2" maxlength="500" placeholder="最後の在庫を引いた！">最後の在庫を引いた！</textarea></div>
+      <div class="fg" style="margin-top:10px;margin-bottom:0;"><label>ラストワン賞ファイル（引いた人だけDL）</label>
+        <div class="file-wrap"><input type="file" id="lastFile" onchange="lastFileSet(this);updateFileLabel(this,'lastFileLabel')"><div class="file-display" id="lastFileLabel">ファイルを選択</div></div>
+        <div class="flex gap-8" style="align-items:center;margin-top:6px;"><span class="xn" id="lastFileInfo" style="margin:0;"></span><button class="btn btn-danger btn-sm" style="margin-left:auto;" onclick="lastFileClear()">削除</button></div>
       </div>
-    </aside>
+      <p style="font-size:10px;color:var(--text-dim);margin-top:8px;">景品一覧の「在庫」を空欄にすると無制限。ラストワン賞は在庫設定済み景品の残数合計が0になった抽選で1回だけ発動します。</p>
+    </div>
+    <div class="card" id="eventPresetsCard">
+      <div class="card-title">イベント保存・切り替え</div>
+      <div class="fg"><label>イベント名</label><input type="text" id="eventPresetName" placeholder="例：周年記念ガチャ" maxlength="80"></div>
+      <button class="btn btn-primary btn-block" style="margin-top:0;" onclick="saveEventPresetFromUI()">現在のイベントを保存</button>
+      <div class="fg" style="margin-top:10px;"><label>保存済みイベント</label><select id="eventPresetSelect"><option value="">保存済みイベントなし</option></select></div>
+      <div class="flex gap-8"><button class="btn btn-ghost" style="flex:1;" onclick="loadEventPresetFromUI()">読み込む</button><button class="btn btn-danger" style="flex:1;" onclick="deleteEventPresetFromUI()">削除</button></div>
+      <p style="font-size:10px;color:var(--text-dim);margin-top:8px;">レアリティ・景品・ファイル・在庫・抽選ルール・ゲージ設定を保存します。リスナー登録と残り回数は切り替えません。</p>
+    </div>
+    <div class="card">
+      <div class="card-title">データ管理</div>
+      <p style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">設定・景品ファイルはすべて自動保存されます。</p>
+      <button class="btn btn-danger btn-block" style="width:100%;padding:10px;font-size:11px;" onclick="resetAll()">すべてリセット</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="stat-grid">
+      <div class="stat-item"><div class="stat-val" id="statConn">0</div><div class="stat-lbl">接続中</div></div>
+      <div class="stat-item"><div class="stat-val" id="statReg">0</div><div class="stat-lbl">登録済み</div></div>
+      <div class="stat-item"><div class="stat-val" id="statR">0</div><div class="stat-lbl">レアリティ</div></div>
+      <div class="stat-item"><div class="stat-val" id="statWins">0</div><div class="stat-lbl">当選数</div></div>
+    </div>
+    <div class="tab-nav">
+      <button class="tab-btn active" data-tab="room" onclick="switchTab('room',this)">ルーム</button>
+      <button class="tab-btn" data-tab="manage" onclick="switchTab('manage',this)">リスナー管理</button>
+      <button class="tab-btn" data-tab="log" onclick="switchTab('log',this)">ログ</button>
+      <button class="tab-btn" data-tab="ach" onclick="switchTab('ach',this)">達成配布型</button>
+      <button class="tab-btn" data-tab="goods" onclick="switchTab('goods',this)">リアグ在庫</button>
+      <button class="tab-btn" data-tab="help" onclick="switchTab('help',this)">使い方</button>
+    </div>
+
+    <div class="tab-pane active" id="tab-room">
+      <div class="card" id="eventGaugeCard">
+        <div class="card-title">全員参加型イベントゲージ</div>
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">接続中の全リスナーの抽選回数を合算します。ゲスト画面にもリアルタイムで表示されます。</p>
+        <div class="form-row">
+          <div class="fg"><label>目標回数</label><input type="number" id="gaugeGoal" min="1" step="1" value="100"></div>
+          <div class="fg"><label>ゲージタイトル</label><input type="text" id="gaugeTitle" value="みんなで目標達成！" maxlength="80"></div>
+        </div>
+        <div class="fg"><label>達成メッセージ（任意）</label><input type="text" id="gaugeMessage" placeholder="目標達成ありがとう！" maxlength="160"></div>
+        <div class="fg" style="margin-top:10px;">
+          <label>目標達成報酬ファイル（任意）</label>
+          <div class="file-wrap"><input type="file" id="gaugeRewardInput" onchange="updateFileLabel(this,'gaugeRewardFileLabel')"><div class="file-display" id="gaugeRewardFileLabel">ファイルを選択（なくてもOK）</div></div>
+          <div class="flex gap-8 mt-8"><button class="btn btn-primary" style="flex:1;" onclick="saveGaugeRewardFile()">報酬ファイルを登録</button><button class="btn btn-ghost" style="flex:1;" onclick="removeGaugeRewardFile()">ファイルを外す</button></div>
+          <p id="gaugeRewardStatus" style="font-size:11px;color:var(--text-dim);margin-top:6px;">未登録。目標達成時に接続中のリスナーへ配布します。</p>
+          <p style="font-size:10px;color:var(--text-dim);margin-top:4px;">JPEG/PNG/WebP画像は位置情報（GPS）などのメタデータを除去して保存します。PDF・ZIP・動画などは中身を変更せず保存します。</p>
+        </div>
+        <div style="margin:10px 0 4px;display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--text-dim);"><span id="hostGaugeTitle">みんなで目標達成！</span><strong id="hostGaugeCount">0 / 100</strong></div>
+        <div style="height:9px;background:var(--border);border-radius:99px;overflow:hidden;"><div id="hostGaugeFill" style="height:100%;width:0;background:linear-gradient(90deg,#55b8ff,#ff3d71);transition:width .25s;"></div></div>
+        <p id="hostGaugeStatus" style="font-size:11px;color:var(--text-dim);margin-top:6px;">目標達成で全ゲスト画面に通知します。</p>
+        <div class="flex gap-8 mt-8"><button class="btn btn-primary" style="flex:1;" onclick="applyGaugeSettings()">設定を反映</button><button class="btn btn-ghost" style="flex:1;" onclick="resetEventGauge()">ゲージをリセット</button></div>
+      </div>
+      <div class="card">
+        <div class="card-title">ルーム管理</div>
+        <p style="color:var(--text-dim);font-size:10px;margin-bottom:12px;">通信内容はWebRTCのDTLSで暗号化されます。ただしP2P直結では接続相手にIPアドレスが見える可能性があります。IPを隠すには認証情報付きTURN中継サーバーが必要です。新しいルームIDとPIN認証を使い、共有URLは信頼できる相手だけに送ってください。</p>
+        <div id="roomCreateArea">
+          <p style="color:var(--text-dim);font-size:13px;margin-bottom:12px;">レアリティと景品を登録後、ルームを作成してURLをリスナーに共有してください。</p>
+          <p style="color:var(--cyan);font-size:11px;margin-bottom:8px;">同じブラウザなら次回も同じルームIDが使われます。</p>
+          <button class="btn btn-gold btn-block" onclick="createRoom()">ルームを作成する</button>
+        </div>
+        <div id="roomInfoArea" style="display:none;">
+          <div class="room-id-display" id="roomIdDisplay">------</div>
+          <div style="margin-top:8px;font-size:11px;color:var(--text-dim);">リスナー共有URL（直接編集できます）</div>
+          <input type="text" id="guestUrlBox" style="margin-top:6px;font-size:11px;color:var(--cyan);background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:8px;padding:10px;width:100%;" placeholder="-">
+          <p style="font-size:10px;color:var(--text-dim);margin-top:4px;">※ URLが違う場合は手動で修正してください</p>
+          <div class="flex gap-8 mt-8">
+            <button class="btn btn-primary" style="flex:1;" onclick="copyGuestUrl()">URLをコピー</button>
+            <button class="btn btn-danger" style="flex:1;padding:8px;" onclick="closeRoom()">閉じる</button>
+          </div>
+          <button class="btn btn-ghost btn-block" onclick="resetRoomId()">ルームIDを変更する（URLが変わります）</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="tab-manage">
+      <div class="card" style="margin-bottom:12px;">
+        <div class="card-title">リスナーを追加 / Pt付与</div>
+        <div class="form-row">
+          <div class="fg"><label>リスナー名</label><input type="text" id="newListenerName" placeholder="例: ☆ゆいか☆"></div>
+          <div class="fg"><label>投げたPt数</label><input type="number" id="newListenerPt" placeholder="例: 1000" min="0"></div>
+        </div>
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:6px;" id="spinsPreview">　</p>
+        <button class="btn btn-primary btn-block" style="margin-top:0;" onclick="addListener()">追加 / 回数を付与</button>
+      </div>
+      <div class="card">
+        <div class="card-title flex" style="align-items:center;">
+          リスナー一覧
+          <button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="resetAllSpins()">全員の回数をリセット</button>
+        </div>
+        <div id="listenerTableWrap"><div class="empty">リスナーが登録されていません</div></div>
+      </div>
+    </div>
+
+
+
+    <div class="tab-pane" id="tab-ach">
+      <div class="card">
+        <div class="card-title">達成配布型ポイント</div>
+        <p class="xn">リスナーのptに応じて景品をDLできる仕組みです。ガチャとは別のptで管理します。ptの確認・景品の送信はすべてこの画面（ホスト）側で行うため、リスナー側のコードを書き換えてもDLできません。</p>
+        <div class="pills"><button class="pill" id="achM-select" onclick="achMode('select')">保有pt内で選ぶ</button><button class="pill" id="achM-all" onclick="achMode('all')">保有pt以下を全部DL</button></div>
+        <p class="xn" style="margin-top:6px;">「選ぶ」はptを消費して好きな景品を何個でも／「全部DL」はptを消費せず、保有pt以下の景品を1つずつ全部。</p>
+        <div class="pills" style="margin-top:8px;"><button class="pill" id="achS-items" onclick="achSubSet('items')">景品</button><button class="pill" id="achS-users" onclick="achSubSet('users')">リスナー</button><button class="pill" id="achS-log" onclick="achSubSet('log')">ログ</button></div>
+      </div>
+      <div id="achSecItems">
+        <div class="card">
+          <div class="card-title">景品を登録</div>
+          <div class="form-row"><div class="fg"><label>景品名</label><input type="text" id="aiName" placeholder="例: アイコンリング"></div><div class="fg"><label>必要pt</label><input type="number" id="aiPt" min="1" placeholder="例: 300"></div></div>
+          <div class="fg"><label>メッセージ（任意）</label><textarea id="aiText" rows="2" placeholder="受け取り時に表示するメッセージ"></textarea></div>
+          <div class="fg"><label>ファイル（任意）</label><div class="file-wrap"><input type="file" id="aiFile" onchange="updateFileLabel(this,'aiFileLabel')"><div class="file-display" id="aiFileLabel">ファイルを選択（なくてもOK）</div></div></div>
+          <div class="fg"><label>種別</label><select id="aiKind"></select></div>
+          <button class="btn btn-primary btn-block" onclick="achAddItem()">景品を追加</button>
+        </div>
+        <div class="card"><div class="card-title">登録済みの景品</div><div id="achItemList"></div></div>
+      </div>
+      <div id="achSecUsers" style="display:none;">
+        <div class="card">
+          <div class="card-title">リスナーにptを付与</div>
+          <div class="form-row"><div class="fg"><label>リスナー名</label><input type="text" id="apName" placeholder="例: ☆ゆいか☆"></div><div class="fg"><label>付与pt</label><input type="number" id="apPt" min="1" placeholder="例: 1000"></div></div>
+          <button class="btn btn-primary btn-block" onclick="achAddPt()">付与する</button>
+          <p class="xn" style="margin-top:8px;">未登録の名前はリスナー管理にも自動で登録されます（ガチャ回数は0回）。</p>
+        </div>
+        <div class="card"><div class="card-title flex" style="align-items:center;">リスナー一覧<button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="achUserCSV()">CSV</button></div><div id="achUserList"></div></div>
+      </div>
+      <div id="achSecLog" style="display:none;">
+        <div class="card"><div class="card-title flex" style="align-items:center;">達成ログ<button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="achLogCSV()">CSV</button><button class="btn btn-danger btn-sm" style="margin-left:6px;" onclick="achClearLog()">クリア</button></div><div id="achLogList"></div></div>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="tab-goods">
+      <div class="card">
+        <div class="card-title">リアグ在庫</div>
+        <p class="xn">手持ちのリアルグッズを登録します。景品登録の「種別」で選ぶと、当選のたびに在庫が減り、在庫0になった景品は抽選から外れます。</p>
+        <div class="form-row"><div class="fg"><label>品名</label><input type="text" id="gName" placeholder="例: ブロマイド"></div><div class="fg"><label>在庫数</label><input type="number" id="gStock" min="0" placeholder="例: 10"></div></div>
+        <button class="btn btn-primary btn-block" onclick="goodsAdd()">追加</button>
+      </div>
+      <div class="card"><div class="card-title">登録済みリアグ</div><div id="goodsWrap"></div></div>
+    </div>
+
+    <div class="tab-pane" id="tab-help">
+      <div class="card"><div class="card-title">使い方</div>
+        <ol style="padding-left:18px;font-size:13px;line-height:1.8;">
+          <li>レアリティと景品を登録（ファイル・在庫も設定）</li>
+          <li>「ルーム」タブでルームを作成し、共有URLをリスナーに送る</li>
+          <li>「リスナー管理」で名前と投げたPtを登録すると、抽選回数が付与される</li>
+          <li>リスナーがURLを開いて名前を入力→ガチャを引く。景品ファイルは当選後に自動で届く</li>
+          <li>当選結果は「ログ」で確認・CSV出力できる</li>
+          <li>リアルグッズ(リアグ)は「リアグ在庫」で登録し、景品登録の「種別」で選ぶ。当たったリアグは「ログ」の発送管理で未発送／発送済み／保留を管理</li>
+          <li>達成配布型は「達成配布型」タブで景品(必要pt)とリスナーのptを登録。リスナー画面の「達成配布型」タブからDLできる</li>
+        </ol>
+      </div>
+      <div class="card"><div class="card-title">よくある質問</div>
+        <div style="font-size:13px;line-height:1.7;">
+          <p><b>Q. ライバーとリスナーの両方がページを開いていないと使えない？</b><br>A. はい。ライバー側がこのページでルームを開いている間だけ、リスナーは接続して引けます。ライバーがページを閉じる・スリープすると切断されます。</p>
+          <p style="margin-top:10px;"><b>Q. 途中で切れたらどうなる？</b><br>A. 残り回数はライバー側に保存されているので、再接続すれば同じ名前で続けられます。</p>
+          <p style="margin-top:10px;"><b>Q. データはどこに保存される？</b><br>A. このブラウザ内（端末ごと）です。ブラウザのデータを消す、別の端末や別のブラウザで開くと引き継がれません。</p>
+          <p style="margin-top:10px;"><b>Q. 同じリスナーに同じ景品が出る？</b><br>A. 初期状態では出ます。出したくない場合は「在庫・ラストワン設定」で「重複を禁止」をオンにしてください。</p>
+          <p style="margin-top:10px;"><b>Q. 達成配布型の2つのモードの違いは？</b><br>A. 「保有pt内で選ぶ」はptを消費して好きな景品を何個でも選べます（例：2000ptで300pt×3＋1000pt×1）。「保有pt以下を全部DL」はptが減らず、保有pt以下の景品を1つずつ全部受け取れます。</p>
+          <p style="margin-top:10px;"><b>Q. 達成配布型のDLはコードを書き換えれば回避できる？</b><br>A. できません。ptの確認と景品ファイルの送信はホスト側で行うため、リスナー側で細工しても受け取れません。</p>
+          <p style="margin-top:10px;"><b>Q. リアグの住所はどうする？</b><br>A. このツールでは住所を扱いません。当選者へX(旧Twitter)やDiscordなどで連絡してください。ツールでは「誰が何を当てたか」と発送状態だけを管理します。</p>
+          <p style="margin-top:10px;"><b>Q. 景品ファイルが届かない</b><br>A. 送信中は次の抽選が待たされます。完了まで画面を閉じずにお待ちください。</p>
+        </div>
+      </div>
+      <div class="card"><div class="card-title">バックアップ（保険）</div>
+        <p class="xn">データはこのブラウザの中だけに保存されています。ブラウザのデータ削除・端末の変更・故障に備えて、定期的に書き出しておくのがおすすめです。対象は「達成配布型・リアグ在庫・リアグ発送管理」です（達成配布型の景品ファイルも含みます）。ガチャ本体の景品設定は含まれません。</p>
+        <div class="flex gap-8"><button class="btn btn-primary btn-sm" onclick="bkExport()">書き出す</button><button class="btn btn-ghost btn-sm" onclick="document.getElementById('bkFile').click()">読み込む</button></div>
+        <input type="file" id="bkFile" accept=".json,application/json" style="display:none" onchange="bkImport(this)">
+      </div>
+      <div class="card"><div class="card-title">通信とプライバシー</div>
+        <p style="font-size:13px;line-height:1.7;">通信はすべて中継サーバー経由で行われるため、ライバーとリスナーのお互いのIPアドレスが相手に伝わることはありません。<br><span style="font-size:11px;color:var(--text-dim);">※接続の仕組みを提供する外部サーバー（中継・接続の仲介）には、通信に必要な情報が渡ります。</span></p>
+      </div>
+      <div class="card"><div class="card-title">免責事項</div>
+        <p style="font-size:12px;line-height:1.8;">本ツールを利用された時点で、以下に同意したものとみなします。<br>
+          1. 本ツールは個人が無償で提供するもので、現状のまま提供されます。正確性・完全性・継続的な動作・特定の目的への適合性を保証しません。<br>
+          2. 制作者は、本ツールの利用または利用できないことで生じた損害（データの消失、景品の未配布・誤配布、通信の不具合など）について、制作者に故意または重大な過失がある場合を除き、責任を負いません。<br>
+          3. ライバーとリスナーの間での景品・リアグの授受、発送、住所などの個人情報のやり取りは、当事者間の責任で行ってください。<br>
+          4. データはブラウザ内に保存されます。消去や故障に備え、バックアップは各自で行ってください。<br>
+          5. 内容は予告なく変更・停止することがあります。IRIAMなど各サービスの利用規約は各自でお守りください。</p>
+      </div>
+      <div class="card"><div class="card-title">不具合・ご要望・他のツール</div>
+        <p style="font-size:13px;line-height:1.9;">不具合や追加してほしい機能は、こちらのXアカウントまでご連絡お願いします。<br><a href="https://x.com/yonagi__rei?s=11" target="_blank" rel="noopener noreferrer" style="color:#2563eb;font-weight:900;text-decoration:underline;">X：@yonagi__rei に連絡する</a></p>
+        <p style="font-size:13px;line-height:1.9;margin-top:10px;">IRIAMライバー向けの複合ツールはこちら。<br><a href="https://yonagirei0214-art.github.io/iri/" target="_blank" rel="noopener noreferrer" style="color:#2563eb;font-weight:900;text-decoration:underline;">IRIAMライバー向け複合ツールを開く</a></p>
+      </div>
+    </div>
+    <div class="tab-pane" id="tab-log">
+
+      <div class="card">
+        <div class="card-title">リアグ発送管理</div>
+        <p class="xn">ガチャ・達成配布型で当たったリアグの一覧です。住所などの個人情報はこのツールでは扱いません（X(旧Twitter)やDiscordなどで別途やり取りしてください）。</p>
+        <div id="shipWrap"></div>
+      </div>
+      <div class="card">
+        <div class="card-title flex" style="align-items:center;flex-wrap:wrap;gap:6px;">
+          当選ログ
+          <select id="logFilter" onchange="renderLog()" style="width:auto;max-width:130px;padding:4px 8px;margin-left:4px;font-size:11px;"></select>
+          <div class="flex gap-4" style="margin-left:auto;">
+            <button class="btn btn-ghost btn-sm" onclick="exportCSV()">CSV</button>
+            <button class="btn btn-danger btn-sm" onclick="clearLog()">クリア</button>
+          </div>
+        </div>
+        <div id="winLog"><div class="empty">まだ当選者がいません</div></div>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- ================= MODAL ================= -->
-<div class="modal-bg" id="modalBg">
-  <div class="modal" id="modalBox"></div>
-</div>
-<div class="confetti" id="confetti"></div>
-
+<style>
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:#fff;font:700 12px var(--font);color:var(--text-dim);cursor:pointer}
+.pill.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.xn{font-size:11px;color:var(--text-dim);margin-bottom:10px;line-height:1.6}
+</style>
 <script>
-(function(){
-"use strict";
-/* ================= DATA ================= */
-var COLORS = [
-  {c:"#E14B32", n:"あか"}, {c:"#2471A3", n:"あお"}, {c:"#1E9E4A", n:"みどり"}, {c:"#F5A800", n:"きいろ"},
-  {c:"#D6336C", n:"ピンク"}, {c:"#0E7C6B", n:"ティール"}, {c:"#7D3C98", n:"むらさき"}, {c:"#5D6D7E", n:"グレー"}
-];
-var JOBS = [
-  {name:"医師", salary:90000, mark:"医"},
-  {name:"スポーツ選手", salary:80000, mark:"球"},
-  {name:"弁護士", salary:70000, mark:"弁"},
-  {name:"パイロット", salary:70000, mark:"空"},
-  {name:"動画クリエイター", salary:60000, mark:"映"},
-  {name:"エンジニア", salary:55000, mark:"技"},
-  {name:"デザイナー", salary:45000, mark:"絵"},
-  {name:"教師", salary:42000, mark:"教"},
-  {name:"シェフ", salary:38000, mark:"料"},
-  {name:"農家", salary:35000, mark:"農"}
-];
-var HOUSES = [
-  {name:"駅近マンション", price:120000, sub:"便利で暮らしやすい人気物件"},
-  {name:"郊外の一戸建て", price:250000, sub:"庭付き。家族みんなでのびのび"},
-  {name:"海の見える豪邸", price:480000, sub:"憧れの大豪邸。資産価値も高め"}
-];
-/* type: start, plus, minus, salary, job, marriage, child, house, special, goal */
-var TILES = [
-  {t:"start",   mark:"出", lbl:"スタート"},
-  {t:"plus",    mark:"¥", lbl:"お年玉", amt:10000},
-  {t:"minus",   mark:"!", lbl:"教科書をなくす", amt:-6000},
-  {t:"plus",    mark:"¥", lbl:"お手伝い", amt:8000},
-  {t:"special", mark:"★", lbl:"ラッキーマス"},
-  {t:"plus",    mark:"¥", lbl:"アルバイト", amt:15000},
-  {t:"job",     mark:"職", lbl:"職業決定", stop:true},
-  {t:"plus",    mark:"¥", lbl:"初ボーナス", amt:20000},
-  {t:"salary",  mark:"給", lbl:"給料日"},
-  {t:"minus",   mark:"!", lbl:"歓迎会つづき", amt:-12000},
-  {t:"plus",    mark:"¥", lbl:"残業代", amt:18000},
-  {t:"special", mark:"★", lbl:"ラッキーマス"},
-  {t:"minus",   mark:"!", lbl:"スマホを割る", amt:-15000},
-  {t:"salary",  mark:"給", lbl:"給料日"},
-  {t:"plus",    mark:"¥", lbl:"昇進ボーナス", amt:30000},
-  {t:"minus",   mark:"!", lbl:"引っ越し費用", amt:-20000},
-  {t:"special", mark:"★", lbl:"ラッキーマス"},
-  {t:"plus",    mark:"¥", lbl:"資格手当", amt:12000},
-  {t:"marriage",mark:"結", lbl:"結婚", stop:true},
-  {t:"plus",    mark:"¥", lbl:"結婚祝い余り", amt:10000},
-  {t:"salary",  mark:"給", lbl:"給料日"},
-  {t:"child",   mark:"子", lbl:"赤ちゃん誕生"},
-  {t:"minus",   mark:"!", lbl:"家電が故障", amt:-18000},
-  {t:"plus",    mark:"¥", lbl:"夫婦で副業", amt:24000},
-  {t:"child",   mark:"子", lbl:"赤ちゃん誕生"},
-  {t:"salary",  mark:"給", lbl:"給料日"},
-  {t:"special", mark:"★", lbl:"ラッキーマス"},
-  {t:"minus",   mark:"!", lbl:"車の修理代", amt:-26000},
-  {t:"child",   mark:"子", lbl:"赤ちゃん誕生"},
-  {t:"plus",    mark:"¥", lbl:"昇給", amt:20000},
-  {t:"house",   mark:"家", lbl:"マイホーム", stop:true},
-  {t:"salary",  mark:"給", lbl:"給料日"},
-  {t:"minus",   mark:"!", lbl:"家の修繕費", amt:-22000},
-  {t:"plus",    mark:"¥", lbl:"ボーナス", amt:35000},
-  {t:"special", mark:"★", lbl:"ラッキーマス"},
-  {t:"minus",   mark:"!", lbl:"家族旅行", amt:-30000},
-  {t:"salary",  mark:"給", lbl:"給料日"},
-  {t:"plus",    mark:"¥", lbl:"部長に昇進", amt:40000},
-  {t:"child",   mark:"子", lbl:"赤ちゃん誕生"},
-  {t:"minus",   mark:"!", lbl:"子供の習い事", amt:-16000},
-  {t:"special", mark:"★", lbl:"ラッキーマス"},
-  {t:"salary",  mark:"給", lbl:"給料日"},
-  {t:"plus",    mark:"¥", lbl:"退職金前払い", amt:25000},
-  {t:"minus",   mark:"!", lbl:"健康診断で再検査", amt:-10000},
-  {t:"special", mark:"★", lbl:"ラッキーマス"},
-  {t:"salary",  mark:"給", lbl:"給料日"},
-  {t:"plus",    mark:"¥", lbl:"長年の功労金", amt:50000},
-  {t:"minus",   mark:"!", lbl:"孫へのお小遣い", amt:-12000},
-  {t:"plus",    mark:"¥", lbl:"年金のボーナス", amt:30000},
-  {t:"special", mark:"★", lbl:"ラッキーマス"},
-  {t:"plus",    mark:"¥", lbl:"思い出の品が売れた", amt:20000},
-  {t:"minus",   mark:"!", lbl:"最後の贅沢旅行", amt:-25000},
-  {t:"plus",    mark:"¥", lbl:"ゴール目前ボーナス", amt:15000},
-  {t:"goal",    mark:"旗", lbl:"ゴール！"}
-];
-var SPECIALS = [
-  {title:"宝くじが当たった！", desc:"なんと宝くじで大当たり。臨時収入ゲット！", amt:60000},
-  {title:"株で大もうけ", desc:"買っていた株が急上昇。売って利益確定！", amt:45000},
-  {title:"株で大損…", desc:"株価が急落。手痛い損失が出てしまった。", amt:-40000},
-  {title:"副業がヒット", desc:"週末の副業が話題に。うれしい副収入！", amt:30000},
-  {title:"車が故障", desc:"突然のエンジントラブル。修理代がかかった。", amt:-25000},
-  {title:"コンテストで優勝", desc:"趣味のコンテストで優勝して賞金ゲット！", amt:35000},
-  {title:"落とし物を届けた", desc:"財布を届けたらお礼をもらった。いいことをすると返ってくる。", amt:10000},
-  {title:"衝動買い…", desc:"セールに釣られてつい買いすぎてしまった。", amt:-20000},
-  {title:"臨時ボーナス", desc:"会社の業績が好調で臨時ボーナス支給！", amt:28000},
-  {title:"引っ越しで出費", desc:"急な転勤で引っ越し。費用がかさんだ。", amt:-28000}
-];
-var GOAL = TILES.length - 1;
-var GOAL_BONUS = [100000, 60000, 40000, 25000, 15000, 10000, 5000, 0];
+/* ===== 拡張: リアグ / 達成配布型 ===== */
+const XKEY='gacha_ext_v1';
+let X={goods:[],real:{},realLog:[],ach:{mode:'select',items:[],users:{},log:[]},last:{fileName:'',mime:'',winner:''}};
+let _curName='',_curCd=null;
+try{const r=JSON.parse(localStorage.getItem(XKEY)||'null');if(r&&typeof r==='object'){X.goods=r.goods||[];X.real=r.real||{};X.realLog=r.realLog||[];X.ach={mode:r.ach&&r.ach.mode==='all'?'all':'select',items:(r.ach&&r.ach.items)||[],users:(r.ach&&r.ach.users)||{},log:(r.ach&&r.ach.log)||[]};if(r.last&&typeof r.last==='object')X.last={fileName:r.last.fileName||'',mime:r.last.mime||'',winner:r.last.winner||''};}}catch(e){}
+function saveExt(){try{localStorage.setItem(XKEY,JSON.stringify(X));}catch(e){console.warn('ext save failed',e);}}
+const xid=()=>Date.now()*1000+Math.floor(Math.random()*1000);
+const xnow=()=>new Date().toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+const xe=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const $x=id=>document.getElementById(id);
 
-/* ================= STATE ================= */
-var state = { players:[], current:0, turn:1, spinning:false, moving:false, started:false, finishCount:0 };
-var playerCount = 4;
+/* --- 景品の種別(デジグ/リアグ) --- */
+function realOk(p){const g=X.real[p.id];if(!g)return true;const o=X.goods.find(x=>x.id===g);return !o||o.stock>0;}
+function goodsOpts(sel){return '<option value="">デジグ</option>'+X.goods.map(g=>`<option value="${g.id}"${g.id===sel?' selected':''}>リアグ：${xe(g.name)}（残${g.stock}）</option>`).join('');}
+function kindSel(rid,pid){return `<select onchange="setKind(${pid},this.value)" title="種別" style="width:auto;max-width:150px;padding:4px 6px;font-size:12px;">${goodsOpts(X.real[pid]||0)}</select>`;}
+function kindSelNew(rid){return `<select id="pk-${rid}">${goodsOpts(0)}</select><p class="xn" style="margin:4px 0 0;">リアグにするには先に「リアグ在庫」タブで登録してください。</p>`;}
+function setKind(pid,v){if(v)X.real[pid]=Number(v);else delete X.real[pid];saveExt();}
+function rarRerender(){const open=[...document.querySelectorAll('.rarity-body.open')].map(e=>e.id);renderRarities();open.forEach(id=>{const el=$x(id);if(el)el.classList.add('open');});}
 
-function yen(n){ var s = n<0 ? "-" : ""; return s + "¥" + Math.abs(n).toLocaleString("ja-JP"); }
-function $(id){ return document.getElementById(id); }
-function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
-function wait(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+/* --- ガチャ抽選フック(リアグ当選を記録し在庫を減らす) --- */
+function rollGacha(l){const r=rollGacha0(l);if(r&&X.real[r.prize.id])realAdd(X.real[r.prize.id],r.prize.name,_curName,r.rarity,'ガチャ',1);if(r&&r.lastOneAwarded)lastWon(_curCd);return r;}
 
-/* ================= SETUP UI ================= */
-function renderCount(){
-  var row = $("countRow"); row.innerHTML = "";
-  for(var i=2;i<=8;i++){
-    (function(n){
-      var b = document.createElement("button");
-      b.className = "count-btn" + (n===playerCount ? " active" : "");
-      b.innerHTML = n + "<small>人</small>";
-      b.onclick = function(){ playerCount = n; renderCount(); renderRows(); };
-      row.appendChild(b);
-    })(i);
-  }
-}
-function renderRows(){
-  var wrap = $("playerRows"); wrap.innerHTML = "";
-  for(var i=0;i<playerCount;i++){
-    (function(idx){
-      var div = document.createElement("div"); div.className = "player-row";
-      var dot = document.createElement("div"); dot.className = "p-dot"; dot.style.background = COLORS[idx].c; dot.textContent = idx+1;
-      var input = document.createElement("input"); input.type = "text"; input.maxLength = 10;
-      input.placeholder = "プレイヤー" + (idx+1); input.id = "pname-" + idx;
-      if(idx===0) input.value = "あなた";
-      var sel = document.createElement("select"); sel.id = "ptype-" + idx;
-      sel.innerHTML = '<option value="human">ヒト</option><option value="bot">ボット</option>';
-      if(idx>0) sel.value = "bot";
-      div.appendChild(dot); div.appendChild(input); div.appendChild(sel);
-      wrap.appendChild(div);
-    })(i);
-  }
-}
-renderCount(); renderRows();
+/* --- リアグ在庫 --- */
+function goodsAdd(){const name=$x('gName').value.trim();let stock=parseInt($x('gStock').value);if(!name)return alert('品名を入力してください');if(!(stock>=0))stock=0;X.goods.push({id:xid(),name,stock});$x('gName').value='';$x('gStock').value='';saveExt();renderGoods();rarRerender();}
+function goodsSet(id,v){const g=X.goods.find(x=>x.id===id);if(!g)return;g.stock=Math.max(0,parseInt(v)||0);saveExt();renderGoods();rarRerender();}
+function goodsDel(id){if(!confirm('このリアグを削除しますか？紐づいた景品はデジグ扱いに戻ります。'))return;X.goods=X.goods.filter(g=>g.id!==id);for(const k of Object.keys(X.real))if(X.real[k]===id)delete X.real[k];X.ach.items.forEach(i=>{if(i.real===id)i.real=0;});saveExt();renderGoods();rarRerender();renderAch();}
+function renderGoods(){const w=$x('goodsWrap');if(!w)return;
+  if(!X.goods.length){w.innerHTML='<div class="empty">リアグが登録されていません</div>';return;}
+  w.innerHTML=`<table class="tbl"><thead><tr><th>品名</th><th>在庫</th><th>未発送</th><th></th></tr></thead><tbody>`+X.goods.map(g=>{const un=X.realLog.filter(e=>e.goodsId===g.id&&e.status==='unshipped').length;
+    return `<tr><td>${xe(g.name)}</td><td><input type="number" min="0" value="${g.stock}" onchange="goodsSet(${g.id},this.value)" style="width:72px;padding:4px 6px;"></td><td>${un}件</td><td><button class="btn btn-danger btn-sm" onclick="goodsDel(${g.id})">削除</button></td></tr>`;}).join('')+'</tbody></table>';}
 
-$("startBtn").onclick = function(){
-  state.players = [];
-  for(var i=0;i<playerCount;i++){
-    var name = $("pname-"+i).value.trim() || ("プレイヤー" + (i+1));
-    var isBot = $("ptype-"+i).value === "bot";
-    state.players.push({
-      idx:i, name:name, isBot:isBot, color:COLORS[i].c,
-      pos:0, money:20000, job:null, salary:0, married:false,
-      kids:0, house:null, houseValue:0, finished:false, goalBonus:0, rank:0
-    });
-  }
-  state.current = 0; state.turn = 1; state.finishCount = 0; state.started = true;
-  $("setupView").hidden = true; $("gameView").hidden = false;
-  buildBoard(); buildWheel(); renderAll();
-  addLog("ゲームスタート！ 全員 ¥20,000 から出発です。");
-  window.scrollTo({top:0});
-  maybeBotTurn();
-};
+/* --- リアグ発送管理 --- */
+let shipF='unshipped',shipS='new';
+const SHIP={unshipped:'未発送',shipped:'発送済み',hold:'保留'};
+function realAdd(goodsId,prizeName,name,rarity,src,n){n=n||1;const g=X.goods.find(x=>x.id===goodsId);if(g)g.stock=Math.max(0,g.stock-n);
+  for(let i=0;i<n;i++)X.realLog.unshift({id:xid()+i,goodsId:goodsId||0,name,prize:prizeName,rarity:(rarity&&rarity.name)||'',color:(rarity&&rarity.color)||'#888888',t:xnow(),src,status:'unshipped'});
+  saveExt();renderGoods();renderShip();}
+function setShipF(f){shipF=f;renderShip();}
+function setShipS(s){shipS=s;renderShip();}
+function setShip(id,v){const e=X.realLog.find(x=>x.id===id);if(e){e.status=v;saveExt();renderShip();renderGoods();}}
+function clearShipped(){if(!confirm('発送済みの記録をすべて削除しますか？'))return;X.realLog=X.realLog.filter(e=>e.status!=='shipped');saveExt();renderShip();renderGoods();}
+function shipCSV(){const q=s=>'"'+String(s).replace(/"/g,'""')+'"';const rows=[['日時','リスナー','景品','レアリティ','由来','状態'].map(q).join(',')].concat(X.realLog.map(e=>[e.t,e.name,e.prize,e.rarity,e.src,SHIP[e.status]||e.status].map(q).join(',')));
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+rows.join('\n')],{type:'text/csv'}));a.download='real-goods-shipping.csv';document.body.appendChild(a);a.click();a.remove();}
+function renderShip(){const w=$x('shipWrap');if(!w)return;
+  const cnt=k=>X.realLog.filter(e=>e.status===k).length;
+  const tabs=['unshipped','shipped','hold','all'].map(k=>`<button class="pill${shipF===k?' on':''}" onclick="setShipF('${k}')">${k==='all'?'すべて':SHIP[k]}（${k==='all'?X.realLog.length:cnt(k)}）</button>`).join('');
+  let rows=X.realLog.filter(e=>shipF==='all'||e.status===shipF);
+  const cmp=(a,b)=>String(a).localeCompare(String(b),'ja');
+  if(shipS==='prize')rows=rows.slice().sort((a,b)=>cmp(a.prize,b.prize)||cmp(a.name,b.name));
+  else if(shipS==='name')rows=rows.slice().sort((a,b)=>cmp(a.name,b.name)||cmp(a.prize,b.prize));
+  const opt=(v,l)=>`<option value="${v}"${shipS===v?' selected':''}>${l}</option>`;
+  const head=`<div class="pills">${tabs}</div><div class="flex gap-8" style="margin:10px 0;align-items:center;flex-wrap:wrap;"><select onchange="setShipS(this.value)" style="width:auto;padding:5px 8px;font-size:12px;">${opt('new','新しい順')}${opt('prize','景品別')}${opt('name','リスナー別')}</select><button class="btn btn-ghost btn-sm" onclick="shipCSV()">CSV</button><button class="btn btn-danger btn-sm" onclick="clearShipped()">発送済みを削除</button></div>`;
+  if(!rows.length){w.innerHTML=head+'<div class="empty">該当するリアグ当選はありません</div>';return;}
+  w.innerHTML=head+`<table class="tbl"><thead><tr><th>景品</th><th>リスナー</th><th>日時</th><th>状態</th></tr></thead><tbody>`+rows.map(e=>{const so=Object.entries(SHIP).map(([k,l])=>`<option value="${k}"${e.status===k?' selected':''}>${l}</option>`).join('');
+    return `<tr><td>${xe(e.prize)}${e.rarity?` <span style="font-size:10px;color:${xe(e.color)};font-weight:900;">${xe(e.rarity)}</span>`:''}</td><td>${xe(e.name)}</td><td style="font-size:11px;">${xe(e.t)}<br>${xe(e.src)}</td><td><select onchange="setShip(${e.id},this.value)" style="width:auto;padding:4px 6px;font-size:12px;">${so}</select></td></tr>`;}).join('')+'</tbody></table>';}
 
-/* ================= BOARD ================= */
-function tileClass(t){
-  return {start:"t-start",plus:"t-plus",minus:"t-minus",salary:"t-salary",job:"t-job",
-    marriage:"t-marriage",child:"t-child",house:"t-house",special:"t-special",goal:"t-goal"}[t] || "t-normal";
-}
-function buildBoard(){
-  var board = $("board"); board.innerHTML = "";
-  var cols = 10, rows = Math.ceil(TILES.length / cols);
-  /* deco fillers for empty cells */
-  var occupied = {};
-  TILES.forEach(function(_, i){
-    var r = Math.floor(i/cols), c = (r%2===0) ? (i%cols) : (cols-1-(i%cols));
-    occupied[r+"-"+c] = i;
-  });
-  var decos = ["🌳","🌷","☁️","🌳","🏠","🌷","☀️","🌳"];
-  var d = 0;
-  for(var r=0;r<rows;r++) for(var c=0;c<cols;c++){
-    if(occupied[r+"-"+c] === undefined){
-      var el = document.createElement("div"); el.className = "deco"; el.textContent = decos[d++ % decos.length];
-      el.style.gridRow = (r+1); el.style.gridColumn = (c+1);
-      board.appendChild(el);
+/* --- 達成配布型 --- */
+let achSub='items';
+function achSubSet(s){achSub=s;renderAch();}
+function achMode(m){X.ach.mode=m;saveExt();renderAch();achPushAll();toast(m==='select'?'「保有pt内で選ぶ」型にしました':'「保有pt以下を全部DL」型にしました');}
+async function achAddItem(){
+  const name=$x('aiName').value.trim(),pt=parseInt($x('aiPt').value),text=$x('aiText').value.trim(),f=$x('aiFile').files[0],kind=$x('aiKind').value;
+  if(!name)return alert('景品名を入力してください');if(!(pt>=1))return alert('必要ptを1以上で入力してください');
+  if(!text&&!f&&!kind)return alert('メッセージかファイルのどちらかは必要です');
+  const id=xid();let fileName=null,mime=null;
+  if(f){try{const ab=await stripExif(f);fileName=f.name;mime=f.type||'application/octet-stream';await dbSaveFile('a-'+id,ab,fileName,mime);}catch(e){console.error(e);return alert('ファイルを保存できませんでした。容量を確認して再試行してください。');}}
+  X.ach.items.push({id,name,pt,text,real:kind?Number(kind):0,fileName,mime});
+  ['aiName','aiPt','aiText'].forEach(i=>$x(i).value='');$x('aiFile').value='';const lb=$x('aiFileLabel');if(lb)lb.textContent='ファイルを選択（なくてもOK）';
+  saveExt();renderAch();achPushAll();}
+async function achDelItem(id){if(!confirm('この景品を削除しますか？'))return;const it=X.ach.items.find(x=>x.id===id);if(it&&it.fileName)await dbDeleteFile('a-'+id).catch(()=>{});X.ach.items=X.ach.items.filter(x=>x.id!==id);saveExt();renderAch();achPushAll();}
+
+/* --- ラストワン賞ファイル(引いた人だけDL) --- */
+function lastInfo(){const w=$x('lastFileInfo');if(w)w.textContent=X.last.fileName?('登録中：'+X.last.fileName+(X.last.winner?'（当選：'+X.last.winner+'）':'')):'ファイルは未登録です';}
+async function lastFileSet(inp){const f=inp.files[0];if(!f)return;try{const ab=await stripExif(f);await dbSaveFile('last',ab,f.name,f.type||'application/octet-stream');X.last.fileName=f.name;X.last.mime=f.type||'application/octet-stream';saveExt();lastInfo();toast('ラストワン賞のファイルを登録しました');}catch(e){console.error(e);alert('ファイルを保存できませんでした。容量を確認して再試行してください。');}inp.value='';const lb=$x('lastFileLabel');if(lb)lb.textContent='ファイルを選択';}
+async function lastFileClear(){if(!X.last.fileName)return;if(!confirm('ラストワン賞のファイルを削除しますか？'))return;await dbDeleteFile('last').catch(()=>{});X.last={fileName:'',mime:'',winner:X.last.winner};saveExt();lastInfo();}
+function lastWon(cd){if(!cd||!X.last.fileName)return;X.last.winner=cd.name;saveExt();lastInfo();let tries=0,idle=0;
+  const t=setInterval(()=>{tries++;if(!cd.conn||!cd.conn.open||tries>150){clearInterval(t);return;}if(cd.sending||cd.transferWait||cd.achBusy){idle=0;return;}if(++idle<2)return;clearInterval(t);sendLast(cd);},400);}
+async function sendLast(cd){const rec=await dbLoadFile('last').catch(()=>null);if(!rec||!rec.arrayBuffer||!cd.conn||!cd.conn.open)return;
+  if(cd.sending||cd.transferWait){setTimeout(()=>sendLast(cd),600);return;}
+  achPush(cd);cd.sending=true;sendChunks(cd.conn,rec.arrayBuffer,rec.name,rec.mimeType,'ach-last',()=>{cd.sending=false;if(typeof flushPendingGaugeReward==='function')flushPendingGaugeReward(cd);},'ach');}
+function ensureListener(name){if(!state.listeners[name]){state.listeners[name]={remainingSpins:0,peerId:null,spinsUsed:0,pin:state.pinEnabled?genPin():null,wonPrizeIds:[]};renderListeners();updateStats();saveState();}}
+function achAddPt(){const name=$x('apName').value.trim(),pt=parseInt($x('apPt').value);if(!name)return alert('リスナー名を入力してください');if(!(pt>0))return alert('1以上のptを入力してください');
+  ensureListener(name);const u=X.ach.users[name]||(X.ach.users[name]={pt:0,spent:0,got:{}});u.pt+=pt;$x('apName').value='';$x('apPt').value='';saveExt();renderAch();achPushTo(name);toast(`${name} に ${pt}pt 付与しました`);}
+function achEditPt(name){const u=X.ach.users[name];if(!u)return;const v=prompt('保有ptを入力（現在の合計）',u.pt);if(v===null)return;const n=parseInt(v);if(!(n>=0))return alert('0以上の数値を入力してください');u.pt=n;saveExt();renderAch();achPushTo(name);}
+function achUserReset(name){if(!confirm(name+' の達成ptと受取履歴をリセットしますか？'))return;X.ach.users[name]={pt:0,spent:0,got:{}};saveExt();renderAch();achPushTo(name);}
+function achUserDel(name){if(!confirm(name+' の達成pt情報を削除しますか？'))return;delete X.ach.users[name];saveExt();renderAch();achPushTo(name);}
+function achClearLog(){if(!confirm('達成ログをクリアしますか？'))return;X.ach.log=[];saveExt();renderAch();}
+function renderAch(){if(!$x('achSecItems'))return;
+  ['select','all'].forEach(m=>{const b=$x('achM-'+m);if(b)b.classList.toggle('on',X.ach.mode===m);});
+  ['items','users','log'].forEach(s=>{$x('achSec'+s[0].toUpperCase()+s.slice(1)).style.display=achSub===s?'':'none';const b=$x('achS-'+s);if(b)b.classList.toggle('on',achSub===s);});
+  const ko=$x('aiKind');if(ko){const cur=ko.value;ko.innerHTML=goodsOpts(0);if([...ko.options].some(o=>o.value===cur))ko.value=cur;}
+  const items=X.ach.items.slice().sort((a,b)=>a.pt-b.pt);
+  $x('achItemList').innerHTML=items.length?`<table class="tbl"><thead><tr><th>必要pt</th><th>景品</th><th></th></tr></thead><tbody>`+items.map(i=>{const g=X.goods.find(x=>x.id===i.real);
+    return `<tr><td><b>${i.pt}</b>pt</td><td>${xe(i.name)}${i.real?` <span class="prize-tag" style="background:#ff3d7122;color:#c8321f;">リアグ${g?'：'+xe(g.name)+'（残'+g.stock+'）':''}</span>`:''}${i.fileName?` <span class="prize-tag tag-file">${xe(i.fileName)}</span>`:''}${i.text?' <span class="prize-tag tag-text">テキスト</span>':''}</td><td><button class="btn btn-danger btn-sm" onclick="achDelItem(${i.id})">削除</button></td></tr>`;}).join('')+'</tbody></table>':'<div class="empty">景品が登録されていません</div>';
+  const names=Object.keys(X.ach.users),sel=X.ach.mode==='select';
+  $x('achUserList').innerHTML=names.length?`<table class="tbl"><thead><tr><th>リスナー</th><th>保有pt</th>${sel?'<th>残り</th>':''}<th>受取</th><th></th></tr></thead><tbody>`+names.map(n=>{const u=X.ach.users[n];const got=Object.values(u.got).reduce((a,b)=>a+b,0);
+    return `<tr><td>${xe(n)}</td><td><b>${u.pt}</b></td>${sel?`<td>${u.pt-u.spent}</td>`:''}<td>${got}個</td><td><div class="flex gap-4"><button class="btn btn-ghost btn-sm" onclick="achEditPt(decodeURIComponent('${jsq(n)}'))">修正</button><button class="btn btn-ghost btn-sm" onclick="achUserReset(decodeURIComponent('${jsq(n)}'))">リセット</button><button class="btn btn-danger btn-sm" onclick="achUserDel(decodeURIComponent('${jsq(n)}'))">削除</button></div></td></tr>`;}).join('')+'</tbody></table>':'<div class="empty">リスナーが登録されていません</div>';
+  $x('achLogList').innerHTML=X.ach.log.length?`<table class="tbl"><thead><tr><th>日時</th><th>リスナー</th><th>景品</th><th>pt</th></tr></thead><tbody>`+X.ach.log.slice(0,300).map(e=>`<tr><td style="font-size:11px;">${xe(e.t)}</td><td>${xe(e.name)}</td><td>${xe(e.item)}${e.n>1?' ×'+e.n:''}</td><td>${e.mode==='all'?'-':e.pt}</td></tr>`).join('')+'</tbody></table>':'<div class="empty">まだ受け取りはありません</div>';}
+
+/* --- 達成配布型: ホスト側でpt・在庫を検証(ゲスト側のコード改ざんではDLできない) --- */
+function achState(name){const u=X.ach.users[name],m=X.ach.mode;
+  return{type:'ach_state',last:!!(X.last.fileName&&X.last.winner===name),enabled:X.ach.items.length>0,mode:m,hasPt:!!u,pt:u?(m==='select'?u.pt-u.spent:u.pt):0,total:u?u.pt:0,owned:u?u.got:{},
+    items:X.ach.items.slice().sort((a,b)=>a.pt-b.pt).map(i=>({id:i.id,name:i.name,pt:i.pt,real:!!i.real,hasFile:!!i.fileName}))};}
+function achPush(cd){try{if(cd&&cd.conn&&cd.conn.open)cd.conn.send(achState(cd.name));}catch(e){}}
+function achPushTo(name){Object.values(state.connections).filter(cd=>cd.name===name).forEach(achPush);}
+function achPushAll(){Object.values(state.connections).forEach(achPush);}
+async function achHandle(conn,d){
+  const cd=state.connections[conn.peer];if(!cd)return;
+  const err=m=>{try{conn.send({type:'ach_error',message:m});}catch(e){}};
+  if(d.type==='ach_get'){achPush(cd);return;}
+  if(d.type==='ach_last'){if(X.last.fileName&&X.last.winner===cd.name&&!cd.sending&&!cd.transferWait)sendLast(cd);return;}
+  const u=X.ach.users[cd.name];
+  if(!u)return err('達成配布型のポイントが登録されていません。ライバーに確認してください');
+  if(cd.sending||cd.transferWait||cd.achBusy)return err('処理中です。少し待ってからもう一度お試しください');
+  const items=X.ach.items,mode=X.ach.mode,find=id=>items.find(x=>String(x.id)===String(id));
+  const stockOf=it=>{if(!it.real)return Infinity;const g=X.goods.find(x=>x.id===it.real);return g?g.stock:Infinity;};
+  let give=[],cost=0,redl=false;
+  if(d.type==='ach_claim'&&mode==='select'){
+    for(const [id,n0] of Object.entries(d.picks||{})){const it=find(id),n=Math.floor(Number(n0));if(!it||!(n>0)||n>99)continue;give.push({it,n});cost+=it.pt*n;}
+    if(!give.length)return err('景品が選ばれていません');
+    if(cost>u.pt-u.spent)return err('ポイントが足りません');
+    const bad=give.find(g=>stockOf(g.it)<g.n);if(bad)return err(`「${bad.it.name}」は在庫が足りません`);
+  }else if(d.type==='ach_claim_all'&&mode==='all'){
+    give=items.filter(it=>it.pt<=u.pt&&!(u.got[it.id]>0)&&stockOf(it)>=1).map(it=>({it,n:1}));
+    if(!give.length)return err('受け取れる景品がありません');
+  }else if(d.type==='ach_redl'){
+    const it=find(d.id);if(!it||!(u.got[it.id]>0))return err('受け取り済みの景品ではありません');
+    give=[{it,n:0}];redl=true;
+  }else return err('現在のモードでは使えない操作です。画面を更新してください');
+  cd.achBusy=true;
+  try{
+    const files=[];
+    for(const g of give){if(g.it.fileName){const rec=await dbLoadFile('a-'+g.it.id).catch(()=>null);if(!rec||!rec.arrayBuffer)return err(`「${g.it.name}」のファイルがホスト側に見つかりません`);files.push({pid:'ach-'+g.it.id,rec});}}
+    if(!conn.open||cd.sending||cd.transferWait)return err('処理中です。もう一度お試しください');
+    if(!redl){
+      if(mode==='select'){if(cost>u.pt-u.spent||give.some(g=>stockOf(g.it)<g.n))return err('ポイントまたは在庫が変更されました。画面を更新してください');u.spent+=cost;}
+      for(const g of give){u.got[g.it.id]=(u.got[g.it.id]||0)+g.n;X.ach.log.unshift({t:xnow(),name:cd.name,item:g.it.name,n:g.n,pt:g.it.pt*g.n,mode});if(g.it.real)realAdd(g.it.real,g.it.name,cd.name,null,'達成配布型',g.n);}
+      X.ach.log=X.ach.log.slice(0,1000);saveExt();renderAch();
     }
-  }
-  TILES.forEach(function(tile, i){
-    var row = Math.floor(i/cols), col = (row%2===0) ? (i%cols) : (cols-1-(i%cols));
-    var el = document.createElement("div");
-    el.className = "tile " + tileClass(tile.t) + (tile.stop ? " stop" : "");
-    el.id = "tile-" + i; el.style.gridRow = (row+1); el.style.gridColumn = (col+1);
-    var amt = tile.amt ? '<div class="amt">' + (tile.amt>0?"+":"") + yen(tile.amt) + "</div>" : "";
-    el.innerHTML = '<div class="mark">' + tile.mark + '</div><div class="lbl">' + tile.lbl + '</div>' + amt + '<div class="tokens" id="tokens-' + i + '"></div>';
-    board.appendChild(el);
-  });
-}
-function renderTokens(hopIdx){
-  TILES.forEach(function(_, i){
-    var box = $("tokens-" + i); if(!box) return; box.innerHTML = "";
-    state.players.forEach(function(p){
-      if(p.pos === i && !p.finished){
-        var t = document.createElement("div"); t.className = "token" + (p.idx===hopIdx ? " hop" : "");
-        t.style.background = p.color; t.textContent = p.idx + 1; t.title = p.name;
-        box.appendChild(t);
-      }
-    });
-  });
+    conn.send({type:'ach_result',redl,items:give.map(g=>({id:g.it.id,name:g.it.name,text:g.it.text||'',real:!!g.it.real,hasFile:!!g.it.fileName,n:g.n}))});
+    achPush(cd);
+    if(files.length){cd.sending=true;(function next(){const f=files.shift();if(!f||!conn.open){cd.sending=false;if(typeof flushPendingGaugeReward==='function')flushPendingGaugeReward(cd);return;}
+      sendChunks(conn,f.rec.arrayBuffer,f.rec.name,f.rec.mimeType,f.pid,e=>{if(e)console.warn('ach file transfer failed:',e);next();},'ach');})();}
+  }finally{cd.achBusy=false;}
 }
 
-/* ================= WHEEL ================= */
-var wheelAngle = 0;
-function buildWheel(){
-  var w = $("wheel"); w.innerHTML = "";
-  for(var n=1;n<=6;n++){
-    var ang = (n-1)*60 + 30;
-    var rad = ang * Math.PI/180;
-    var el = document.createElement("div"); el.className = "wnum"; el.textContent = n;
-    el.style.left = (50 + 36*Math.sin(rad)) + "%";
-    el.style.top  = (50 - 36*Math.cos(rad)) + "%";
-    w.appendChild(el);
-  }
-}
-function spinWheel(result){
-  return new Promise(function(resolve){
-    /* segment for result: pointer at top; each segment 60deg, number n centered at (n-1)*60+30 */
-    var targetMod = 360 - ((result-1)*60 + 30);
-    var currentMod = ((wheelAngle % 360) + 360) % 360;
-    var delta = ((targetMod - currentMod) + 360) % 360;
-    wheelAngle += 360*5 + delta;
-    var w = $("wheel"); w.style.transform = "rotate(" + wheelAngle + "deg)";
-    var tick = 0;
-    var iv = setInterval(function(){ $("wheelCenter").textContent = (tick++ % 6) + 1; }, 90);
-    setTimeout(function(){ clearInterval(iv); $("wheelCenter").textContent = result; resolve(); }, 2650);
-  });
-}
+function dlText(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);}
+function csvOf(rows){const q=v=>{let t=String(v);if(typeof v==='string'&&/^[=+\-@\t\r]/.test(t))t="'"+t;return '"'+t.replace(/"/g,'""')+'"';};return '\ufeff'+rows.map(r=>r.map(q).join(',')).join('\n');}
+function achLogCSV(){dlText('ach-log.csv',csvOf([['日時','リスナー','景品','個数','pt']].concat(X.ach.log.map(e=>[e.t,e.name,e.item,e.n,e.mode==='all'?'':e.pt]))),'text/csv');}
+function achUserCSV(){dlText('ach-listeners.csv',csvOf([['リスナー','保有pt','使用pt','受取数']].concat(Object.entries(X.ach.users).map(([n,u])=>[n,u.pt,u.spent,Object.values(u.got).reduce((a,b)=>a+b,0)]))),'text/csv');}
+async function bkExport(){
+  const files={};
+  for(const it of X.ach.items){if(!it.fileName)continue;try{const r=await dbLoadFile('a-'+it.id);if(r&&r.arrayBuffer){const u8=new Uint8Array(r.arrayBuffer);let bin='';for(let i=0;i<u8.length;i+=0x8000)bin+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));files[it.id]={name:r.name,mime:r.mimeType,b64:btoa(bin)};}}catch(e){}}
+  if(X.last.fileName){try{const r=await dbLoadFile('last');if(r&&r.arrayBuffer){const u8=new Uint8Array(r.arrayBuffer);let bin='';for(let i=0;i<u8.length;i+=0x8000)bin+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));files.last={name:r.name,mime:r.mimeType,b64:btoa(bin)};}}catch(e){}}
+  dlText('gacha-backup-'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify({app:'gacha-ext',v:1,at:new Date().toISOString(),ext:X,files}),'application/json');
+  toast('バックアップを書き出しました');}
+async function bkImport(inp){
+  const f=inp.files[0];inp.value='';if(!f)return;
+  let d;try{d=JSON.parse(await f.text());}catch(e){return alert('ファイルを読み込めませんでした（バックアップ形式ではありません）');}
+  if(!d||d.app!=='gacha-ext'||!d.ext||typeof d.ext!=='object')return alert('このツールのバックアップファイルではありません');
+  if(!confirm('現在の達成配布型・リアグ在庫・発送管理のデータを、バックアップの内容で上書きします。よろしいですか？'))return;
+  const e=d.ext,a=e.ach||{};
+  const nx={goods:Array.isArray(e.goods)?e.goods:[],real:(e.real&&typeof e.real==='object')?e.real:{},realLog:Array.isArray(e.realLog)?e.realLog:[],ach:{mode:a.mode==='all'?'all':'select',items:Array.isArray(a.items)?a.items:[],users:(a.users&&typeof a.users==='object')?a.users:{},log:Array.isArray(a.log)?a.log:[]}};
+  nx.last=(e.last&&typeof e.last==='object')?{fileName:e.last.fileName||'',mime:e.last.mime||'',winner:e.last.winner||''}:{fileName:'',mime:'',winner:''};
+  let miss=0;
+  if(nx.last.fileName){const fl=d.files&&d.files.last;if(!fl||!fl.b64){miss++;nx.last.fileName='';}else{try{const bin=atob(fl.b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);await dbSaveFile('last',u8.buffer,fl.name||nx.last.fileName,fl.mime||nx.last.mime||'application/octet-stream');}catch(err){miss++;nx.last.fileName='';}}}
+  for(const it of nx.ach.items){if(!it.fileName)continue;const fl=d.files&&d.files[it.id];if(!fl||!fl.b64){miss++;continue;}
+    try{const bin=atob(fl.b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);await dbSaveFile('a-'+it.id,u8.buffer,fl.name||it.fileName,fl.mime||it.mime||'application/octet-stream');}catch(err){miss++;}}
+  X=nx;saveExt();lastInfo();Object.keys(X.ach.users).forEach(ensureListener);renderGoods();renderShip();renderAch();rarRerender();achPushAll();
+  alert('読み込みました'+(miss?`（ファイル${miss}件は復元できませんでした。該当する景品は再登録してください）`:''));}
+const jsq=n=>encodeURIComponent(n).replace(/'/g,'%27');
+document.addEventListener('DOMContentLoaded',()=>{renderGoods();renderShip();renderAch();lastInfo();});
 
-/* ================= RENDER ================= */
-function renderPlayers(){
-  var list = $("playerList"); list.innerHTML = "";
-  state.players.forEach(function(p){
-    var div = document.createElement("div");
-    div.className = "pcard" + (state.current===p.idx && !p.finished && state.started ? " turn" : "") + (p.finished ? " done" : "");
-    var chips = "";
-    chips += '<span class="chip">職業 <b>' + (p.job ? p.job : "未定") + "</b></span>";
-    if(p.job) chips += '<span class="chip">給料 <b>' + yen(p.salary) + "</b></span>";
-    chips += '<span class="chip">' + (p.married ? "💍 結婚済み" : "独身") + "</span>";
-    chips += '<span class="chip">子供 <b>' + p.kids + "人</b></span>";
-    chips += '<span class="chip">家 <b>' + (p.house ? p.house : "なし") + "</b></span>";
-    if(p.isBot) chips += '<span class="chip">🤖 ボット</span>';
-    div.innerHTML =
-      (p.finished ? '<div class="done-tag">🏁 ' + p.rank + '着でゴール</div>' : "") +
-      '<div class="row1"><div class="p-dot" style="background:' + p.color + '">' + (p.idx+1) + '</div>' +
-      '<div class="nm">' + escapeHtml(p.name) + '</div>' +
-      '<div class="money' + (p.money<0 ? " neg" : "") + '">' + yen(p.money) + "</div></div>" +
-      '<div class="meta">' + chips + "</div>";
-    list.appendChild(div);
-  });
-}
-function escapeHtml(s){ return s.replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
-function renderTurn(){
-  var p = state.players[state.current];
-  if(!p) return;
-  $("turnDot").style.background = p.color; $("turnDot").textContent = p.idx + 1;
-  $("turnSub").textContent = state.turn + "ターン目";
-  $("turnName").textContent = p.name + (p.isBot ? "（ボット）の番です" : " の番です");
-  var btn = $("spinBtn");
-  btn.disabled = state.spinning || state.moving || p.finished;
-  btn.textContent = p.isBot ? "ボットが考え中…" : "ルーレットを回す";
-}
-function renderAll(){ renderTokens(-1); renderPlayers(); renderTurn(); }
-function addLog(msg){
-  var log = $("log"); var div = document.createElement("div"); div.textContent = msg;
-  log.prepend(div);
-  while(log.children.length > 40) log.removeChild(log.lastChild);
-}
-function setBanner(msg, kind){
-  var b = $("resultBanner"); b.textContent = msg; b.className = "result-banner" + (kind ? " " + kind : "");
-}
-
-/* ================= MODAL ================= */
-function showModal(html){ $("modalBox").innerHTML = html; $("modalBg").classList.add("open"); }
-function closeModal(){ $("modalBg").classList.remove("open"); }
-function infoModal(mark, title, desc, btnLabel, autoMs){
-  return new Promise(function(resolve){
-    showModal('<div class="m-mark">' + mark + '</div><h2>' + title + '</h2><p class="m-desc">' + desc + '</p>' +
-      '<button class="ok-btn" id="mOk">' + (btnLabel || "OK") + "</button>");
-    var done = false, timer = null;
-    function finish(){ if(done) return; done = true; if(timer) clearTimeout(timer); closeModal(); resolve(); }
-    $("mOk").onclick = finish;
-    if(autoMs) timer = setTimeout(finish, autoMs);
-  });
-}
-function choiceModal(mark, title, desc, choices){
-  return new Promise(function(resolve){
-    var html = '<div class="m-mark">' + mark + '</div><h2>' + title + '</h2><p class="m-desc">' + desc + '</p><div class="choice-grid">';
-    choices.forEach(function(c, i){
-      html += '<button class="choice" data-i="' + i + '"><div class="c-main"><div class="c-title">' + c.title + '</div>' +
-        (c.sub ? '<div class="c-sub">' + c.sub + "</div>" : "") + '</div>' +
-        (c.price ? '<div class="c-price">' + c.price + "</div>" : "") + "</button>";
-    });
-    html += "</div>";
-    showModal(html);
-    Array.prototype.forEach.call(document.querySelectorAll(".choice"), function(btn){
-      btn.onclick = function(){ closeModal(); resolve(parseInt(btn.getAttribute("data-i"), 10)); };
-    });
-  });
-}
-
-/* ================= GAME FLOW ================= */
-function paySalary(p, reason){
-  var amt = p.job ? p.salary : 10000;
-  p.money += amt;
-  addLog(p.name + "：給料日！ " + (p.job ? p.job + "のお給料 " : "バイト代 ") + yen(amt) + " を受け取りました。");
-  return amt;
-}
-
-async function doSpin(){
-  if(state.spinning || state.moving) return;
-  var p = state.players[state.current];
-  if(!p || p.finished) return;
-  state.spinning = true; renderTurn(); setBanner("");
-  var result = 1 + Math.floor(Math.random()*6);
-  await spinWheel(result);
-  setBanner(p.name + " は " + result + " が出た！");
-  state.spinning = false; state.moving = true; renderTurn();
-
-  /* move step by step */
-  var steps = result;
-  while(steps > 0){
-    if(p.pos >= GOAL) break;
-    p.pos++; steps--;
-    renderTokens(p.idx); renderPlayers();
-    var tileEl = $("tile-" + p.pos);
-    if(tileEl){ tileEl.classList.remove("current-land"); void tileEl.offsetWidth; tileEl.classList.add("current-land"); }
-    await wait(340);
-    var here = TILES[p.pos];
-    if(here.t === "salary" && p.pos !== GOAL){ paySalary(p); renderPlayers(); await wait(250); }
-    if(here.stop && steps > 0){
-      addLog(p.name + "：STOPマス「" + here.lbl + "」に止まりました。");
-      break;
-    }
-  }
-  renderTokens(-1);
-
-  if(p.pos >= GOAL){ await handleGoal(p); }
-  else { await handleTile(p, TILES[p.pos]); }
-
-  state.moving = false;
-  renderAll();
-  if(checkAllFinished()){ showFinal(); return; }
-  nextTurn();
-}
-
-async function handleTile(p, tile){
-  switch(tile.t){
-    case "plus":
-      p.money += tile.amt; setBanner(tile.lbl + " +" + yen(tile.amt), "good");
-      addLog(p.name + "：「" + tile.lbl + "」 " + yen(tile.amt) + " ゲット！");
-      break;
-    case "minus":
-      p.money += tile.amt; setBanner(tile.lbl + " " + yen(tile.amt), "bad");
-      addLog(p.name + "：「" + tile.lbl + "」 " + yen(tile.amt) + " の出費…");
-      if(p.money < 0) addLog(p.name + "：所持金がマイナスに！ ゴールまでに取り返そう。");
-      break;
-    case "salary":
-      setBanner("給料日！", "good");
-      break; /* already paid while passing */
-    case "job": {
-      var picks = shuffle(JOBS).slice(0, 3);
-      var idx;
-      if(p.isBot){
-        await wait(700);
-        idx = picks.indexOf(picks.reduce(function(a,b){ return a.salary > b.salary ? a : b; }));
-      } else {
-        idx = await choiceModal("💼", "職業を決めよう", p.name + " さん、3つの職業から1つ選んでください。給料日マスに止まるたび、この金額が入ります。",
-          picks.map(function(j){ return {title: j.mark + " " + j.name, sub: "給料 " + yen(j.salary), price: yen(j.salary)}; }));
-      }
-      p.job = picks[idx].name; p.salary = picks[idx].salary;
-      setBanner("職業は " + p.job + " に決定！", "good");
-      addLog(p.name + "：職業は「" + p.job + "」（給料 " + yen(p.salary) + "）に決まりました。");
-      break;
-    }
-    case "marriage": {
-      if(p.married){ setBanner("すでに結婚しています"); break; }
-      p.married = true; p.money += 20000;
-      setBanner("結婚おめでとう！", "good");
-      addLog(p.name + "：結婚しました！ お祝い金 " + yen(20000) + " を受け取りました。");
-      if(!p.isBot) await infoModal("💍", "ご結婚おめでとうございます！", p.name + " さんが結婚しました。<br>みんなからお祝い金 " + yen(20000) + " を受け取りました。", "おめでとう！");
-      else await wait(500);
-      break;
-    }
-    case "child": {
-      p.kids++; p.money += 5000;
-      setBanner("赤ちゃん誕生！ 子供 " + p.kids + "人目", "good");
-      addLog(p.name + "：赤ちゃんが生まれました！（子供 " + p.kids + "人）出産祝い " + yen(5000) + "。ゴール時に1人 " + yen(50000) + " のボーナス。");
-      if(!p.isBot) await infoModal("👶", "赤ちゃんが生まれました！", p.name + " さんに " + p.kids + "人目のお子さんが誕生。<br>ゴール時に子供1人につき " + yen(50000) + " のボーナスが入ります。", "かわいい！");
-      else await wait(350);
-      break;
-    }
-    case "house": {
-      if(p.house){ setBanner("すでに家を持っています"); break; }
-      var choices = HOUSES.map(function(h){ return {title: h.name, sub: h.sub, price: yen(h.price)}; });
-      choices.push({title:"買わない", sub:"賃貸のまま暮らす", price:"¥0"});
-      var idx2;
-      if(p.isBot){
-        await wait(700);
-        idx2 = p.money >= 250000 ? 1 : (p.money >= 120000 ? 0 : 3);
-      } else {
-        idx2 = await choiceModal("🏠", "マイホームを買おう", p.name + " さん、おうちを選びますか？ 家はゴール時に売却でき、値上がりすることも。お金が足りなくても買えます（マイナスになります）。", choices);
-      }
-      if(idx2 < 3){
-        var h = HOUSES[idx2];
-        p.house = h.name; p.money -= h.price;
-        p.houseValue = Math.round(h.price * (0.85 + Math.random()*0.65) / 1000) * 1000;
-        setBanner(h.name + " を購入！", "good");
-        addLog(p.name + "：「" + h.name + "」を " + yen(h.price) + " で購入しました。");
-      } else {
-        addLog(p.name + "：家は買わずに賃貸で暮らすことにしました。");
-      }
-      break;
-    }
-    case "special": {
-      var ev = SPECIALS[Math.floor(Math.random()*SPECIALS.length)];
-      p.money += ev.amt;
-      setBanner(ev.title, ev.amt >= 0 ? "good" : "bad");
-      addLog(p.name + "：ラッキーマス「" + ev.title + "」 " + (ev.amt>=0?"+":"") + yen(ev.amt));
-      if(!p.isBot) await infoModal(ev.amt >= 0 ? "🎉" : "😱", ev.title, ev.desc + "<br><b>" + (ev.amt>=0?"+":"") + yen(ev.amt) + "</b>", "OK");
-      else await wait(500);
-      break;
-    }
-    default: break;
-  }
-  renderPlayers();
-}
-
-async function handleGoal(p){
-  p.finished = true; state.finishCount++;
-  p.rank = state.finishCount;
-  p.goalBonus = GOAL_BONUS[state.finishCount - 1] || 0;
-  p.money += p.goalBonus;
-  setBanner("🏁 " + p.name + " ゴール！", "good");
-  addLog("🏁 " + p.name + " が " + p.rank + "着でゴール！ 順位ボーナス " + yen(p.goalBonus) + "。");
-  confettiBurst();
-  await infoModal("🏁", p.rank + "着でゴール！", p.name + " さんがゴールしました。<br>順位ボーナス <b>" + yen(p.goalBonus) + "</b> を受け取りました。" +
-    (p.house ? "<br>家「" + p.house + "」はゴール集計で売却されます。" : ""), "おつかれさま！", p.isBot ? 2400 : 0);
-  renderTokens(-1); renderPlayers();
-}
-
-function checkAllFinished(){ return state.players.every(function(p){ return p.finished; }); }
-
-function nextTurn(){
-  var n = state.players.length;
-  for(var k=1;k<=n;k++){
-    var cand = (state.current + k) % n;
-    if(!state.players[cand].finished){
-      if(cand <= state.current) state.turn++;
-      state.current = cand; break;
-    }
-  }
-  renderAll();
-  maybeBotTurn();
-}
-function maybeBotTurn(){
-  var p = state.players[state.current];
-  if(p && p.isBot && !p.finished && state.started){
-    setTimeout(function(){ if(!state.spinning && !state.moving) doSpin(); }, 1100);
-  }
-}
-$("spinBtn").onclick = doSpin;
-
-/* ================= FINAL ================= */
-function totalAssets(p){
-  return p.money + (p.house ? p.houseValue : 0) + p.kids * 50000;
-}
-function showFinal(){
-  var ranked = state.players.slice().sort(function(a,b){ return totalAssets(b) - totalAssets(a); });
-  var html = '<div class="m-mark">🏆</div><h2>結果発表！</h2><p class="m-desc">総資産 = 所持金 ＋ 家の売却額 ＋ 子供ボーナス（1人 ¥50,000）</p>';
-  ranked.forEach(function(p, i){
-    var detail = "所持金 " + yen(p.money) + (p.house ? " / 家売却 " + yen(p.houseValue) : "") + (p.kids ? " / 子供 " + p.kids + "人" : "") + " / " + (p.job || "職業未定");
-    html += '<div class="rank-row' + (i===0 ? " first" : "") + '"><div class="rank-num">' + (i+1) + '</div>' +
-      '<div class="r-nm">' + escapeHtml(p.name) + '<div class="r-detail">' + detail + '</div></div>' +
-      '<div class="r-total">' + yen(totalAssets(p)) + "</div></div>";
-  });
-  html += '<button class="ok-btn" id="mAgain">もう一度遊ぶ</button>';
-  showModal(html);
-  confettiBurst();
-  addLog("🏆 優勝は " + ranked[0].name + "（総資産 " + yen(totalAssets(ranked[0])) + "）でした！");
-  $("mAgain").onclick = function(){ location.reload(); };
-}
-function confettiBurst(){
-  var box = $("confetti"); box.innerHTML = ""; box.classList.add("on");
-  var colors = ["#E14B32","#F5A800","#1E9E4A","#2471A3","#D6336C"];
-  for(var i=0;i<60;i++){
-    var el = document.createElement("i");
-    el.style.left = Math.random()*100 + "%";
-    el.style.background = colors[i % colors.length];
-    el.style.animationDuration = (1.6 + Math.random()*1.8) + "s";
-    el.style.animationDelay = (Math.random()*0.5) + "s";
-    box.appendChild(el);
-  }
-  setTimeout(function(){ box.classList.remove("on"); box.innerHTML = ""; }, 4200);
-}
-
-/* ================= MISC ================= */
-$("restartBtn").onclick = function(){ location.reload(); };
-$("rulesBtn").onclick = function(){
-  infoModal("📖", "遊び方", "ルーレット（1〜6）を回してコマを進めます。<br>「給料日」を通るとお給料が入ります（職業決定まではバイト代 ¥10,000）。<br>職業・結婚・マイホームのSTOPマスは必ず止まります。<br>ゴール順にボーナスが入り、最後は<b>総資産</b>（所持金＋家の売却額＋子供1人 ¥50,000）で順位が決まります。", "閉じる");
-};
-})();
 </script>
+<script>
+const state={
+  rarities:[],costPerSpin:100,bonusEvery:null,bonusFree:null,pinEnabled:false,
+  uniquePerListener:false,lastOneEnabled:false,lastOneName:'ラストワン賞',lastOneText:'最後の在庫を引いた！',lastOneClaimed:false,
+  features:{inventory:true,unique:false,lastOne:true,eventPresets:true,eventGauge:true},
+  eventGauge:{goal:100,count:0,title:'みんなで目標達成！',message:'',completed:false,completionId:0,file:null},
+  peer:null,roomId:null,connections:{},listeners:{},log:[],winCount:0
+};
+let _reconnectTimer=null;
+let _roomCreated=false;
+
+/* ===== HTML ESCAPE ===== */
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function setFeature(name,enabled){
+  if(!state.features)state.features={inventory:true,unique:true,lastOne:true,eventPresets:true,eventGauge:true};
+  if(!(name in state.features))return;
+  state.features[name]=!!enabled;
+  renderFeatureToggles();
+  renderRarities();renderHostGauge();
+  Object.values(state.connections).forEach(cd=>{try{if(cd.conn.open)cd.conn.send({type:'features_update',features:{...state.features}});}catch(e){}});
+  if(name==='eventGauge')broadcastEventGauge(false);
+  if(name==='inventory'||name==='unique'||name==='lastOne')broadcastPrizeCatalog();
+  saveState();
+  toast(`${({inventory:'景品在庫管理',unique:'重複防止',lastOne:'ラストワン賞',eventPresets:'イベント保存',eventGauge:'共有ゲージ'})[name]}を${enabled?'オン':'オフ'}にしました`);
+}
+function renderFeatureToggles(){
+  const f=state.features||{};
+  for(const [name,id] of Object.entries({inventory:'featureInventory',unique:'featureUnique',lastOne:'featureLastOne',eventPresets:'featurePresets',eventGauge:'featureGauge'})){
+    const el=document.getElementById(id);if(el)el.checked=f[name]!==false;
+  }
+  const inv=f.inventory!==false,ev=f.eventPresets!==false,gauge=f.eventGauge!==false;
+  const stockLabels=document.querySelectorAll('#rarityList label');
+  stockLabels.forEach(label=>{if(label.textContent.includes('在庫'))label.style.display=inv?'flex':'none';});
+  const rules=document.getElementById('inventoryRulesCard');if(rules)rules.style.display=(f.unique!==false||f.lastOne!==false)?'':'none';
+  const preset=document.getElementById('eventPresetsCard');if(preset)preset.style.display=ev?'':'none';
+  const gaugeCard=document.getElementById('eventGaugeCard');if(gaugeCard)gaugeCard.style.display=gauge?'':'none';
+  const unique=document.getElementById('uniquePerListener');if(unique){unique.disabled=f.unique===false;unique.closest('label').style.opacity=f.unique===false?'.45':'1';}
+  const last=document.getElementById('lastOneEnabled');if(last){last.disabled=f.lastOne===false;last.closest('label').style.opacity=f.lastOne===false?'.45':'1';}
+  const lastName=document.getElementById('lastOneName'),lastText=document.getElementById('lastOneText');
+  if(lastName)lastName.disabled=f.lastOne===false;if(lastText)lastText.disabled=f.lastOne===false;
+}
+function featureEnabled(name){return state.features?.[name]!==false;}
+
+function updatePrizeStock(rid,pid,value){
+  if(!featureEnabled('inventory'))return;
+  const prize=state.rarities.find(r=>r.id===rid)?.prizes.find(p=>p.id===pid);if(!prize)return;
+  if(String(value).trim()===''){prize.stock=null;}
+  else{const n=Number(value);if(!Number.isInteger(n)||n<0){alert('在庫は0以上の整数、または空欄にしてください');renderRarities();return;}prize.stock=n;}
+  if(getLimitedInventoryRemaining()>0)state.lastOneClaimed=false;
+  renderRarities();saveState();broadcastPrizeCatalog();
+  setTimeout(()=>{const body=document.getElementById('rb-'+rid);if(body)body.classList.add('open');},0);
+}
+function applyPrizeRules(){
+  state.uniquePerListener=!!document.getElementById('uniquePerListener').checked;
+  state.lastOneEnabled=!!document.getElementById('lastOneEnabled').checked;
+  state.lastOneName=document.getElementById('lastOneName').value.trim()||'ラストワン賞';
+  state.lastOneText=document.getElementById('lastOneText').value.trim();
+  saveState();
+  toast('在庫・重複ルールを保存しました');
+}
+function getLimitedInventoryRemaining(){
+  if(!featureEnabled('inventory'))return 0;
+  return state.rarities.reduce((sum,r)=>sum+r.prizes.reduce((n,p)=>n+(Number.isInteger(p.stock)&&p.stock>=0?p.stock:0),0),0);
+}
+function getPrizeCatalog(){
+  return state.rarities.flatMap((r,ro)=>r.prizes.map(p=>({pid:p.id,name:p.name,rarityName:r.name,color:r.color,ro})));
+}
+function broadcastPrizeCatalog(){
+  const payload={type:'catalog_update',prizeCatalog:getPrizeCatalog()};
+  Object.values(state.connections).forEach(cd=>{try{if(cd.conn.open)cd.conn.send(payload);}catch(e){}});
+}
+
+/* ===== RARITY ===== */
+function addRarity(){
+  const name=document.getElementById('rName').value.trim();
+  const color=document.getElementById('rColor').value;
+  const rate=parseFloat(document.getElementById('rRate').value);
+  if(!name)return alert('レアリティ名を入力してください');
+  if(isNaN(rate)||rate<=0)return alert('排出率を入力してください');
+  const total=state.rarities.reduce((s,r)=>s+r.rate,0);
+  if(total+rate>100.01)return alert(`合計が100%を超えます（現在:${total.toFixed(1)}%）`);
+  state.rarities.push({id:Date.now(),name,color,rate,prizes:[]});
+  renderRarities();updateStats();saveState();broadcastPrizeCatalog();
+  document.getElementById('rName').value='';
+  document.getElementById('rRate').value='';
+}
+
+async function removeRarity(id){
+  if(!confirm('このレアリティを削除しますか？景品もすべて削除されます。'))return;
+  const r=state.rarities.find(x=>x.id===id);
+  if(r){
+    for(const p of r.prizes){
+      if(p.file)await dbDeleteFile('f-'+p.id).catch(()=>{});
+    }
+  }
+  state.rarities=state.rarities.filter(r=>r.id!==id);
+  renderRarities();updateStats();saveState();broadcastPrizeCatalog();
+}
+
+function toggleBody(id){
+  const el=document.getElementById('rb-'+id);
+  el.classList.toggle('open');
+}
+
+function renderRarities(){
+  const el=document.getElementById('rarityList');
+  const total=state.rarities.reduce((s,r)=>s+r.rate,0);
+  updateRateMeter(total);
+  if(!state.rarities.length){el.innerHTML='<div class="empty">レアリティがありません</div>';return;}
+  el.innerHTML=state.rarities.map(r=>`
+    <div class="rarity-block">
+      <div class="rarity-header" onclick="toggleBody(${r.id})">
+        <div class="rarity-dot" style="background:${r.color};"></div>
+        <span class="rarity-name">${esc(r.name)}</span>
+        <span class="rarity-rate-badge">${r.rate}%</span>
+        <span class="rarity-count">${r.prizes.length}種</span>
+        <button class="icon-btn" onclick="event.stopPropagation();removeRarity(${r.id})">削除</button>
+      </div>
+      <div class="rarity-body" id="rb-${r.id}">
+        ${r.prizes.map(p=>`
+          <div class="prize-entry">
+            ${p.file&&p.file.mimeType&&p.file.mimeType.startsWith('image/')?`<img class="prize-thumb" id="prize-thumb-${p.id}" alt="${esc(p.name)}の画像プレビュー" title="クリックして拡大" onclick="openImagePreview(this.src)" style="display:none;">`:''}
+            <span class="prize-entry-name">${esc(p.name)}</span>
+            ${p.text?`<span class="prize-tag tag-text">テキスト</span>`:''}
+            ${p.file?`<span class="prize-tag tag-file">${esc(p.file.name)}</span>`:''}
+            <label style="display:flex;align-items:center;gap:4px;margin:0;white-space:nowrap;color:var(--text-dim);">在庫<input type="number" min="0" step="1" value="${p.stock===null||p.stock===undefined?'':p.stock}" placeholder="∞" title="空欄=無制限" onchange="updatePrizeStock(${r.id},${p.id},this.value)" style="width:68px;padding:4px 5px;font-size:12px;"></label>
+            ${kindSel(r.id,p.id)}
+            <button class="icon-btn" onclick="removePrize(${r.id},${p.id})">削除</button>
+          </div>`).join('')}
+        ${!r.prizes.length?'<div style="font-size:11px;color:var(--text-dim);padding:4px 0 8px;">景品が未登録です</div>':''}
+        <div class="add-prize-form">
+          <div class="add-prize-title">＋ 景品を追加</div>
+          <div class="fg"><label>景品名</label><input type="text" id="pn-${r.id}" placeholder="例: イラストセット"></div>
+          <div class="fg"><label>メッセージ（任意）</label><textarea id="pt-${r.id}" placeholder="当選メッセージなど（なくてもOK）" rows="2"></textarea></div>
+          <div class="fg">
+            <label>ファイル（任意・ZIP / PNG / PDF など）</label>
+            <div class="file-wrap">
+              <input type="file" id="pf-${r.id}" onchange="updateFileLabel(this,'pfl-${r.id}');previewSelectedFile(this,'pnew-${r.id}')">
+              <div class="file-display" id="pfl-${r.id}">クリックして選択（なくてもOK）</div>
+            </div>
+            <p style="font-size:10px;color:var(--text-dim);margin-top:5px;">JPEG/PNG/WebP画像はGPS位置情報などのメタデータを除去します。その他の形式は元データを保持します。</p>
+            <div class="image-preview-box" id="pnew-${r.id}"><img alt="選択した画像のプレビュー" onclick="openImagePreview(this.src)"><div class="image-preview-caption">画像プレビュー（タップで拡大）</div></div>
+          </div>
+          <div class="fg"><label>種別</label>${kindSelNew(r.id)}</div>
+          <button class="btn btn-primary" style="width:100%;padding:8px;" onclick="addPrize(${r.id})">景品を追加</button>
+        </div>
+      </div>
+    </div>`).join('');
+  loadRegisteredImagePreviews();
+}
+
+async function loadRegisteredImagePreviews(){
+  for(const r of state.rarities){
+    for(const p of r.prizes){
+      if(!p.file||!String(p.file.mimeType||'').startsWith('image/')||!p.file.arrayBuffer)continue;
+      const img=document.getElementById('prize-thumb-'+p.id);
+      if(!img)continue;
+      try{
+        // 保存したデータ形式に合わせてプレビューする（WebPはWebPのまま保持）。
+        const mime=p.file.mimeType||'application/octet-stream';
+        const url=URL.createObjectURL(new Blob([p.file.arrayBuffer],{type:mime}));
+        img.onload=()=>URL.revokeObjectURL(url);
+        img.onerror=()=>{URL.revokeObjectURL(url);img.style.display='none';};
+        img.src=url;img.style.display='block';
+      }catch(e){console.warn('Image preview failed:',e);}
+    }
+  }
+}
+
+function previewSelectedFile(input,boxId){
+  const box=document.getElementById(boxId);if(!box)return;
+  const img=box.querySelector('img');
+  if(img.dataset.previewUrl){URL.revokeObjectURL(img.dataset.previewUrl);delete img.dataset.previewUrl;}
+  const file=input.files&&input.files[0];
+  if(!file||!file.type.startsWith('image/')){box.style.display='none';return;}
+  const url=URL.createObjectURL(file);img.dataset.previewUrl=url;img.src=url;box.style.display='block';
+}
+
+function openImagePreview(src){
+  if(!src)return;
+  const modal=document.getElementById('imagePreviewModal');
+  document.getElementById('imagePreviewModalImg').src=src;
+  modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+}
+function closeImagePreview(){
+  const modal=document.getElementById('imagePreviewModal');
+  modal.classList.remove('open');modal.setAttribute('aria-hidden','true');
+  document.getElementById('imagePreviewModalImg').src='';
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeImagePreview();});
+
+function updateFileLabel(input,labelId){
+  const el=document.getElementById(labelId);
+  if(input.files&&input.files[0]){el.textContent=''+input.files[0].name;el.classList.add('has-file');}
+  else{el.textContent='クリックして選択（なくてもOK）';el.classList.remove('has-file');}
+}
+
+function stripWebPMetadata(arrayBuffer){
+  const src=new Uint8Array(arrayBuffer);
+  if(src.length<12||String.fromCharCode(...src.slice(0,4))!=='RIFF'||String.fromCharCode(...src.slice(8,12))!=='WEBP')throw new Error('WebP header invalid; refusing to save without metadata verification');
+  const readU32=(a,i)=>(a[i]|(a[i+1]<<8)|(a[i+2]<<16)|(a[i+3]<<24))>>>0;
+  const chunks=[];let offset=12;
+  while(offset+8<=src.length){
+    const type=String.fromCharCode(src[offset],src[offset+1],src[offset+2],src[offset+3]);
+    const size=readU32(src,offset+4),end=offset+8+size,padded=end+(size&1);
+    if(end>src.length||padded>src.length)throw new Error('WebP chunk length is invalid');
+    if(type!=='EXIF'&&type!=='XMP '){
+      const chunk=src.slice(offset,padded);
+      // VP8X feature bits: EXIF=0x08, XMP=0x04. Clear them after removing metadata chunks.
+      if(type==='VP8X'&&size>=1)chunk[8]&=~0x0C;
+      chunks.push(chunk);
+    }
+    offset=padded;
+  }
+  if(offset!==src.length)throw new Error('WebP chunk structure is incomplete');
+  const bodyLength=4+chunks.reduce((n,c)=>n+c.length,0);
+  const out=new Uint8Array(8+bodyLength);out.set([82,73,70,70],0);
+  new DataView(out.buffer).setUint32(4,out.length-8,true);out.set([87,69,66,80],8);
+  let target=12;for(const chunk of chunks){out.set(chunk,target);target+=chunk.length;}
+  return out.buffer;
+}
+
+async function stripExif(file){
+  // JPEG/PNGはCanvasで再エンコード、WebPはEXIF/XMPチャンクだけを除去します。
+  // GIF/HEIC/PDF/ZIP/動画等はアニメーションやファイル構造を壊さないため元のまま保持。
+  const fileType=(file.type||'').toLowerCase();
+  const name=String(file.name||'').toLowerCase();
+  const isPng=fileType==='image/png'||(!fileType&&name.endsWith('.png'));
+  const isJpeg=['image/jpeg','image/jpg'].includes(fileType)||(!fileType&&(name.endsWith('.jpg')||name.endsWith('.jpeg')));
+  const isWebP=fileType==='image/webp'||(!fileType&&name.endsWith('.webp'));
+  if(isWebP)return stripWebPMetadata(await file.arrayBuffer());
+  if(!isPng&&!isJpeg)return file.arrayBuffer();
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file);
+    const img=new Image();
+    let revoked=false;
+    const cleanup=()=>{if(!revoked){URL.revokeObjectURL(url);revoked=true;}};
+    img.onload=()=>{
+      try{
+        const c=document.createElement('canvas');
+        c.width=img.naturalWidth;c.height=img.naturalHeight;
+        const ctx=c.getContext('2d');
+        if(!ctx)throw new Error('Canvas context unavailable');
+        ctx.drawImage(img,0,0);
+        cleanup();
+        const mime=isPng?'image/png':'image/jpeg';
+        c.toBlob(b=>{
+          if(!b){reject(new Error('Canvas export failed'));return;}
+          b.arrayBuffer().then(resolve).catch(reject);
+        },mime,isPng?undefined:0.92);
+      }catch(err){cleanup();reject(err);}
+    };
+    img.onerror=()=>{cleanup();reject(new Error('Image load failed'));};
+    img.src=url;
+  });
+}
+
+async function addPrize(rid){
+  const r=state.rarities.find(x=>x.id===rid);if(!r)return;
+  const name=document.getElementById('pn-'+rid).value.trim();
+  const text=document.getElementById('pt-'+rid).value.trim();
+  const fi=document.getElementById('pf-'+rid);
+  if(!name)return alert('景品名を入力してください');
+  const kindV=document.getElementById('pk-'+rid)?.value||'';
+  if(!text&&!fi.files[0]&&!kindV)return alert('メッセージかファイルのどちらかは必要です');
+  const prizeId=Date.now();
+  let file=null;
+  if(fi.files[0]){
+    const fName=fi.files[0].name;
+    const fMime=fi.files[0].type||'application/octet-stream';
+    let ab;
+    try{ab=await stripExif(fi.files[0]);await dbSaveFile('f-'+prizeId,ab,fName,fMime);}
+    catch(e){console.error('dbSave failed:',e);return alert('景品ファイルを保存できませんでした。ブラウザの空き容量を確認し、ファイルサイズを小さくして再試行してください。');}
+    file={name:fName,mimeType:fMime,arrayBuffer:ab};
+  }
+  r.prizes.push({id:prizeId,name,text,file,stock:null});
+  if(kindV){X.real[prizeId]=Number(kindV);saveExt();}
+  renderRarities();updateStats();saveState();broadcastPrizeCatalog();
+  setTimeout(()=>{const rb=document.getElementById('rb-'+rid);if(rb)rb.classList.add('open');},50);
+}
+
+async function removePrize(rid,pid){
+  const r=state.rarities.find(x=>x.id===rid);if(!r)return;
+  const prize=r.prizes.find(p=>p.id===pid);
+  if(prize?.file)await dbDeleteFile('f-'+pid).catch(()=>{});
+  r.prizes=r.prizes.filter(p=>p.id!==pid);
+  renderRarities();updateStats();saveState();broadcastPrizeCatalog();
+  setTimeout(()=>{const rb=document.getElementById('rb-'+rid);if(rb)rb.classList.add('open');},50);
+}
+
+function updateRateMeter(total){
+  const fill=document.getElementById('rateFill');
+  const text=document.getElementById('totalRateText');
+  fill.style.width=Math.min(total,100)+'%';
+  text.textContent=total.toFixed(1)+'%';
+  text.className=total>100?'over':'';
+  fill.style.background=total>100?'var(--red)':
+    total>=99.9?'var(--green)':
+    'var(--ink)';
+}
+
+/* ===== ROOM ===== */
+function genRoomId(){
+  const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  if(!window.crypto?.getRandomValues) throw new Error('安全な乱数を利用できません。HTTPSで開いてください。');
+  const bytes=new Uint8Array(20);crypto.getRandomValues(bytes);
+  return 'GACHA'+Array.from(bytes,b=>c[b%c.length]).join('');
+}
+
+const ROOM_ID_KEY='gacha-room-id';
+
+function createRoom(){
+  const totalRate=state.rarities.reduce((s,r)=>s+r.rate,0);
+  if(!state.rarities.length)return alert('レアリティを追加してください');
+  if(Math.abs(totalRate-100)>0.5)return alert(`排出率の合計を100%にしてください（現在:${totalRate.toFixed(1)}%）`);
+  for(const r of state.rarities){if(!r.prizes.length)return alert(`「${r.name}」に景品が登録されていません`);}
+  state.costPerSpin=parseInt(document.getElementById('costPerSpin').value)||100;
+  let savedRoomId=localStorage.getItem(ROOM_ID_KEY);
+  // 旧形式の短いルームIDは総当たり耐性が低いため、新形式へ自動更新する。既存の共有URLは更新後に使えなくなる。
+  if(!savedRoomId||/^GACHA-[A-Z2-9]{6}$/.test(savedRoomId)){savedRoomId=genRoomId();localStorage.setItem(ROOM_ID_KEY,savedRoomId);}
+  state.roomId=savedRoomId;
+  _roomCreated=false;
+  initPeer(state.roomId);
+}
+
+function resetRoomId(){
+  if(!confirm('ルームIDを変更しますか？\n変更すると既存のゲストURLは使えなくなります。'))return;
+  localStorage.removeItem(ROOM_ID_KEY);
+  _peerGen++;
+  clearTimeout(_reconnectTimer);
+  if(state.peer){state.peer.destroy();state.peer=null;}
+  state.connections={};state.roomId=null;_roomCreated=false;
+  document.getElementById('roomCreateArea').style.display='block';
+  document.getElementById('roomInfoArea').style.display='none';
+  document.getElementById('roomBadge').classList.remove('online','reconnecting');
+  document.getElementById('roomBadgeText').textContent='オフライン';
+  updateStats();renderListeners();
+  toast('新しいIDで作成できます');
+}
+
+
+// ===== TURN（中継）設定：IPを隠すため通信を必ずTURN経由にする =====
+const TURN_URL='https://still-math-2428.yonagirei0214.workers.dev/'; // ← あなたのWorkerのURLに書き換える
+
+// ===== 接続確認表示：実際に中継(relay)で通信しているかを画面に出す =====
+let _relayBad=false;
+function showRelayBadge(text,ok){
+  let el=document.getElementById('relayBadge');
+  if(!el){
+    el=document.createElement('div');el.id='relayBadge';
+    el.style.cssText='position:fixed;left:8px;bottom:8px;z-index:99999;padding:6px 10px;border-radius:8px;font:12px/1.4 sans-serif;color:#fff;max-width:80vw;opacity:.92';
+    el.onclick=()=>{if(!_relayBad)el.remove();};
+    document.body.appendChild(el);
+  }
+  el.style.background=ok?'#1b8a4b':'#c62828';
+  el.textContent=text;
+}
+async function checkRelay(conn){
+  try{
+    await new Promise(r=>setTimeout(r,1500));
+    const pc=conn&&conn.peerConnection;
+    if(!pc||!pc.getStats)return;
+    const stats=await pc.getStats();
+    const cands={};let pair=null,sel=null;
+    stats.forEach(s=>{
+      if(s.type==='local-candidate'||s.type==='remote-candidate')cands[s.id]=s;
+      if(s.type==='transport'&&s.selectedCandidatePairId)sel=s.selectedCandidatePairId;
+    });
+    stats.forEach(s=>{
+      if(s.type!=='candidate-pair')return;
+      if(sel?s.id===sel:(s.nominated&&s.state==='succeeded'))pair=s;
+    });
+    if(!pair){showRelayBadge('接続経路を確認できませんでした',false);return;}
+    const lt=cands[pair.localCandidateId]?.candidateType||'?';
+    const rt=cands[pair.remoteCandidateId]?.candidateType||'?';
+    const ok=lt==='relay'&&rt!=='host'&&rt!=='srflx';
+    if(!ok)_relayBad=true;
+    showRelayBadge(ok?(_relayBad?'⚠ 以前に直接接続あり':'🔒 中継(relay)で接続中'):'⚠ 直接接続の可能性（自分:'+lt+' / 相手:'+rt+'）',ok&&!_relayBad);
+  }catch(e){console.warn('relay check failed',e);}
+}
+let _iceCache=null;
+async function getIceConfig(){
+  if(_iceCache&&Date.now()<_iceCache.exp)return _iceCache.cfg;
+  const ctrl=new AbortController();
+  const t=setTimeout(()=>ctrl.abort(),8000);
+  try{
+    const res=await fetch(TURN_URL,{signal:ctrl.signal});
+    if(!res.ok)throw new Error('TURN '+res.status);
+    const j=await res.json();
+    if(!j.iceServers||!j.iceServers.length)throw new Error('no iceServers');
+    const cfg={iceServers:j.iceServers,iceTransportPolicy:'relay'};
+    _iceCache={cfg,exp:Date.now()+3600*1000};
+    return cfg;
+  }finally{clearTimeout(t);}
+}
+let _peerGen=0;
+async function initPeer(roomId){
+  const gen=++_peerGen;
+  if(state.peer&&!state.peer.destroyed)state.peer.destroy();
+  let ice;
+  try{ice=await getIceConfig();}
+  catch(e){
+    if(gen!==_peerGen)return;
+    console.warn('TURN取得失敗:',e);
+    setBadgeReconnecting();
+    toast('安全な接続の準備に失敗しました('+(e&&e.message?e.message:e)+')。再試行します');
+    clearTimeout(_reconnectTimer);
+    _reconnectTimer=setTimeout(()=>initPeer(roomId),5000);
+    return;
+  }
+  if(gen!==_peerGen)return;
+  state.peer=new Peer(roomId,{debug:0,config:ice});
+  state.peer.on('open',id=>{
+    clearTimeout(_reconnectTimer);
+    if(!_roomCreated){showRoomInfo(id);toast('ルームを作成しました！');_roomCreated=true;}
+    else{setBadgeOnline(id);toast('サーバーに再接続しました');}
+  });
+  state.peer.on('connection',handleConn);
+  state.peer.on('disconnected',()=>{
+    setBadgeReconnecting();
+    clearTimeout(_reconnectTimer);
+    _reconnectTimer=setTimeout(()=>{
+      if(state.peer&&!state.peer.destroyed){
+        try{state.peer.reconnect();}catch(e){initPeer(roomId);}
+      }
+    },2500);
+  });
+  state.peer.on('error',err=>{
+    if(err.type==='unavailable-id'){
+      setBadgeReconnecting();
+      toast('ID確保中... 5秒後に再接続します');
+      clearTimeout(_reconnectTimer);
+      _reconnectTimer=setTimeout(()=>initPeer(roomId),5000);
+    }else if(['network','server-error','socket-error','socket-closed'].includes(err.type)){
+      setBadgeReconnecting();
+      clearTimeout(_reconnectTimer);
+      _reconnectTimer=setTimeout(()=>initPeer(roomId),3000);
+    }else{
+      console.warn('PeerJS error:',err.type,err.message);
+    }
+  });
+}
+
+function setBadgeOnline(id){
+  document.getElementById('roomBadge').classList.remove('reconnecting');
+  document.getElementById('roomBadge').classList.add('online');
+  document.getElementById('roomBadgeText').textContent=id;
+}
+function setBadgeReconnecting(){
+  document.getElementById('roomBadge').classList.remove('online');
+  document.getElementById('roomBadge').classList.add('reconnecting');
+  document.getElementById('roomBadgeText').textContent='再接続中...';
+}
+
+function showRoomInfo(id){
+  document.getElementById('roomCreateArea').style.display='none';
+  document.getElementById('roomInfoArea').style.display='block';
+  document.getElementById('roomIdDisplay').textContent=id;
+  const pathBase=location.pathname.replace(/[^/]+$/,'');
+  const base=location.protocol==='file:' ? './' : location.origin+pathBase;
+  document.getElementById('guestUrlBox').value=base+'gacha-guest.html?room='+id;
+  setBadgeOnline(id);
+}
+
+function copyGuestUrl(){
+  navigator.clipboard.writeText(document.getElementById('guestUrlBox').value)
+    .then(()=>toast('URLをコピーしました！'));
+}
+
+function closeRoom(){
+  if(!confirm('ルームを閉じますか？'))return;
+  _peerGen++;
+  clearTimeout(_reconnectTimer);
+  if(state.peer){state.peer.destroy();state.peer=null;}
+  state.connections={};state.roomId=null;_roomCreated=false;
+  document.getElementById('roomCreateArea').style.display='block';
+  document.getElementById('roomInfoArea').style.display='none';
+  document.getElementById('roomBadge').classList.remove('online','reconnecting');
+  document.getElementById('roomBadgeText').textContent='オフライン';
+  updateStats();renderListeners();
+}
+
+/* ===== PIN AUTH ===== */
+function genPin(){
+  // O/0, I/1/l など紛らわしい文字を除外した8桁英数字
+  const chars='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  if(!window.crypto?.getRandomValues)throw new Error('安全な乱数を利用できません。HTTPSで開いてください。');
+  const bytes=new Uint8Array(8);crypto.getRandomValues(bytes);
+  return Array.from(bytes,b=>chars[b%chars.length]).join('');
+}
+
+function togglePinAuth(){
+  state.pinEnabled=!state.pinEnabled;
+  document.getElementById('pinToggleTrack').classList.toggle('on',state.pinEnabled);
+  document.getElementById('pinToggleLabel').textContent=state.pinEnabled?'オン':'オフ';
+  renderListeners();saveState();
+  // 接続中のゲストに設定変更を通知
+  Object.values(state.connections).forEach(cd=>{
+    cd.conn.send({type:'pin_setting',pinEnabled:state.pinEnabled});
+  });
+  toast(`PIN認証を${state.pinEnabled?'有効':'無効'}にしました`);
+}
+
+function copyPin(name){
+  const l=state.listeners[name];if(!l?.pin)return;
+  navigator.clipboard.writeText(l.pin).then(()=>toast(`${name} のPINをコピーしました`));
+}
+
+/* ===== CONNECTIONS ===== */
+function handleConn(conn){
+  conn.on('open',()=>{
+    checkRelay(conn);
+    conn.send({type:'pin_required',value:state.pinEnabled});
+  });
+  conn.on('data',data=>{
+    if(typeof data!=='object')return;
+    if(data.type==='identify')handleIdentify(conn,data.name,data.pin);
+    else if(data.type==='spin_request')handleSpin(conn);
+    else if(data.type==='batch_request')handleBatch(conn);
+    else if(data.type==='file_ack'||data.type==='file_nack')handleFileTransferReceipt(conn,data);
+    else if(typeof data.type==='string'&&data.type.indexOf('ach_')===0)achHandle(conn,data);
+    else if(data.type==='gauge_reward_request'){const cd=state.connections[conn.peer];if(cd)sendGaugeRewardToConnection(cd);}
+  });
+  conn.on('close',()=>{
+    const cd=state.connections[conn.peer];
+    if(cd?.transferWait)cd.transferWait.finish(new Error('connection closed'));
+    if(cd&&state.listeners[cd.name])state.listeners[cd.name].peerId=null;
+    delete state.connections[conn.peer];
+    updateStats();renderListeners();
+  });
+  conn.on('error',e=>console.warn('conn error:',conn.peer,e));
+}
+
+function handleIdentify(conn,name,pin){
+  const l=state.listeners[name];
+  if(!l){conn.send({type:'error',message:'このユーザー名は登録されていません。ライバーに確認してください。'});return;}
+  if(state.pinEnabled){
+    if(!pin){conn.send({type:'error',message:'PINを入力してください。'});return;}
+    if(pin.toUpperCase()!==l.pin){conn.send({type:'error',message:'PINが違います。ライバーに確認してください。'});return;}
+  }
+  l.peerId=conn.peer;
+  state.connections[conn.peer]={conn,name};
+  const bonusActive=state.bonusEvery>0&&state.bonusFree>0&&state.bonusFree<state.bonusEvery;
+  conn.send({type:'welcome',name,remainingSpins:l.remainingSpins,costPerSpin:state.costPerSpin,
+    bonusEvery:bonusActive?state.bonusEvery:null,bonusFree:bonusActive?state.bonusFree:null,
+    prizeCatalog:getPrizeCatalog(),features:{...state.features},eventGauge:{...state.eventGauge,enabled:featureEnabled('eventGauge'),announce:false}});
+  updateStats();renderListeners();
+  achPush(state.connections[conn.peer]);
+  if(state.eventGauge.completed&&state.eventGauge.file)sendGaugeRewardToConnection(state.connections[conn.peer]);
+}
+
+function handleSpin(conn){
+  const cd=state.connections[conn.peer];if(!cd)return;
+  if(cd.sending){conn.send({type:'spin_denied',message:'ファイル送信中です。少し待ってからもう一度お試しください'});return;}
+  const l=state.listeners[cd.name];_curName=cd.name;_curCd=cd;
+  if(!l||l.remainingSpins<=0){conn.send({type:'spin_denied',message:'残り回数がありません'});return;}
+  const result=rollGacha(l);
+  if(!result){conn.send({type:'spin_denied',message:'引ける景品がありません。在庫または重複制限を確認してください'});return;}
+  l.remainingSpins--;
+  l.spinsUsed=(l.spinsUsed||0)+1;
+  let bonusAwarded=0;
+  const bEvery=parseInt(document.getElementById('bonusEvery').value)||null;
+  const bFree=parseInt(document.getElementById('bonusFree').value)||null;
+  if(bEvery>0&&bFree>0&&bFree<bEvery&&l.spinsUsed%bEvery===0){bonusAwarded=bFree;l.remainingSpins+=bonusAwarded;}
+  saveListenerBalances();
+  try{conn.send({
+    type:'spin_result',rarity:{name:result.rarity.name,color:result.rarity.color},
+    prize:{pid:result.prize.id,name:result.prize.name,text:result.prize.text,hasFile:!!(result.prize.file&&result.prize.file.arrayBuffer),real:!!X.real[result.prize.id],
+      fileName:result.prize.file?.name||null,mimeType:result.prize.file?.mimeType||null},
+    remainingSpins:l.remainingSpins,bonusAwarded,lastOneAwarded:result.lastOneAwarded,
+    lastOneName:result.lastOneAwarded?state.lastOneName:null,lastOneText:result.lastOneAwarded?state.lastOneText:null
+  });}catch(e){console.error('spin_result send failed:',e);return;}
+  if(result.prize.file&&result.prize.file.arrayBuffer){cd.sending=true;sendChunks(conn,result.prize.file.arrayBuffer,result.prize.file.name,result.prize.file.mimeType,result.prize.id,err=>{cd.sending=false;if(err)console.warn('single file transfer failed:',err);flushPendingGaugeReward(cd);});}
+  addLog(cd.name,result);recordEventDraws(1);updateStats();renderListeners();saveState();
+}
+
+/* ===== BATCH（まとめ引き：ホストで一括抽選して1回で送信） ===== */
+function bonusParams(){
+  const every=parseInt(document.getElementById('bonusEvery').value)||null;
+  const free=parseInt(document.getElementById('bonusFree').value)||null;
+  return(every>0&&free>0&&free<every)?{every,free}:{every:null,free:null};
+}
+function drawBatch(l,bonus){
+  const picks=[];let bonusTotal=0;
+  while(l.remainingSpins>0&&picks.length<5000){
+    const res=rollGacha(l);if(!res)break;
+    l.remainingSpins--;l.spinsUsed=(l.spinsUsed||0)+1;picks.push(res);
+    if(bonus.every&&l.spinsUsed%bonus.every===0){l.remainingSpins+=bonus.free;bonusTotal+=bonus.free;}
+  }
+  return{picks,bonusTotal};
+}
+function handleBatch(conn){
+  const cd=state.connections[conn.peer];if(!cd)return;
+  if(cd.sending){conn.send({type:'spin_denied',message:'ファイル送信中です。少し待ってからもう一度お試しください'});return;}
+  const l=state.listeners[cd.name];_curName=cd.name;_curCd=cd;
+  if(!l||l.remainingSpins<=0){conn.send({type:'spin_denied',message:'残り回数がありません'});return;}
+  const{picks,bonusTotal}=drawBatch(l,bonusParams());
+  if(!picks.length){conn.send({type:'spin_denied',message:'景品が登録されていません'});return;}
+  // Commit the authoritative remaining balance before the guest receives results or can reconnect.
+  saveListenerBalances();
+  const table=[],index=new Map(),files=[];
+  const lastOneSeq=[];
+  const seq=picks.map(({rarity,prize,lastOneAwarded})=>{
+    lastOneSeq.push(!!lastOneAwarded);
+    if(!index.has(prize.id)){
+      index.set(prize.id,table.length);
+      const hasFile=!!(prize.file&&prize.file.arrayBuffer);
+      if(hasFile)files.push(prize);
+      table.push({pid:prize.id,ro:state.rarities.indexOf(rarity),rarity:{name:rarity.name,color:rarity.color},
+        name:prize.name,text:prize.text,hasFile,real:!!X.real[prize.id],fileName:prize.file?.name||null,mimeType:prize.file?.mimeType||null});
+    }
+    return index.get(prize.id);
+  });
+  // Persist the new balance and bounded log before replying; reconnects must never restore stale spins.
+  // saveState() writes the independent balance ledger first.
+  saveState();
+  conn.send({type:'batch_result',table,seq,lastOneSeq,lastOneName:state.lastOneName,lastOneText:state.lastOneText,remainingSpins:l.remainingSpins,bonusTotal});
+  conn.send({type:'spins_update',remainingSpins:l.remainingSpins});
+
+  // 大量抽選時に addLog() を5000回 unshift すると O(n²) になるため一括追加。
+  // 表示はrenderLog()側で最新300件に制限されるので、ログ全件はstateに保持。
+  if(picks.length){
+    const t=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const batchLogs=picks.map(res=>({name:cd.name,rarity:res.rarity,prize:res.prize,t,lastOneAwarded:!!res.lastOneAwarded})).reverse();
+    state.log=batchLogs.concat(state.log);
+    state.winCount+=picks.length;
+  }
+  if(picks.length)recordEventDraws(picks.length);
+  renderLog();updateStats();renderListeners();saveState();
+  // 同じ景品のファイルは1回だけ、順番に送る（チャンクが混ざらないよう直列）
+  if(files.length)cd.sending=true;
+  (function next(){
+    const p=files.shift();
+    if(!p||!conn.open){cd.sending=false;flushPendingGaugeReward(cd);return;}
+    sendChunks(conn,p.file.arrayBuffer,p.file.name,p.file.mimeType,p.id,err=>{if(err)console.warn('batch prize file transfer failed:',err);next();});
+  })();
+}
+
+function rollGacha0(listener){
+  if(!state.rarities.length)return null;
+  const won=new Set(listener?.wonPrizeIds||[]);
+  const eligible=state.rarities.map(r=>({rarity:r,prizes:r.prizes.filter(p=>{
+    const hasStock=!featureEnabled('inventory')||p.stock===null||p.stock===undefined||(Number.isInteger(p.stock)&&p.stock>0);
+    return hasStock&&realOk(p)&&(!(featureEnabled('unique')&&state.uniquePerListener)||!won.has(p.id));
+  })})).filter(x=>x.prizes.length&&x.rarity.rate>0);
+  const rateTotal=eligible.reduce((n,x)=>n+x.rarity.rate,0);if(!rateTotal)return null;
+  let pick=Math.random()*rateTotal,sel=eligible[eligible.length-1];
+  for(const entry of eligible){pick-=entry.rarity.rate;if(pick<0){sel=entry;break;}}
+  const prize=sel.prizes[Math.floor(Math.random()*sel.prizes.length)];
+  const limitedBefore=featureEnabled('inventory')?getLimitedInventoryRemaining():0;
+  if(featureEnabled('inventory')&&Number.isInteger(prize.stock)&&prize.stock>=0)prize.stock=Math.max(0,prize.stock-1);
+  if(listener&&featureEnabled('unique')){listener.wonPrizeIds=Array.from(new Set([...(listener.wonPrizeIds||[]),prize.id]));}
+  const limitedAfter=featureEnabled('inventory')?getLimitedInventoryRemaining():0;
+  const lastOneAwarded=!!(featureEnabled('lastOne')&&featureEnabled('inventory')&&state.lastOneEnabled&&!state.lastOneClaimed&&limitedBefore>0&&limitedAfter===0);
+  if(lastOneAwarded)state.lastOneClaimed=true;
+  return{rarity:sel.rarity,prize,lastOneAwarded};
+}
+
+/* ===== FILE TRANSFER ===== */
+function handleFileTransferReceipt(conn,data){
+  const cd=state.connections[conn.peer];
+  const transfer=cd?.transferWait;
+  if(!transfer)return;
+  if(String(data.pid??'')!==String(transfer.pid??''))return;
+  if(data.type==='file_ack'){
+    if(Number.isFinite(Number(data.size))&&Number(data.size)!==transfer.size){
+      transfer.finish(new Error('received file size did not match'));
+      return;
+    }
+    transfer.finish(null);
+  }else{
+    transfer.finish(new Error(data.message||'guest rejected the file transfer'));
+  }
+}
+
+function sendChunks(conn,ab,fileName,mimeType,pid,onDone,transferKind='prize',transferMeta=null){
+  const bytes=ab instanceof ArrayBuffer
+    ?new Uint8Array(ab)
+    :new Uint8Array(ab.buffer,ab.byteOffset,ab.byteLength);
+  // Base64 JSON chunks avoid browser-dependent raw ArrayBuffer/Blob delivery
+  // and keep each PeerJS message well below typical data-channel limits.
+  const CHUNK_SIZE=24*1024;
+  const HIGH_WATER=384*1024;
+  const total=Math.ceil(bytes.byteLength/CHUNK_SIZE);
+  const cd=state.connections[conn.peer]||null;
+  let idx=0,settled=false,pumpTimer=null;
+  const transfer={pid:pid??null,size:bytes.byteLength,timer:null,finish:null};
+  const resetWatchdog=(ms=60000)=>{
+    clearTimeout(transfer.timer);
+    transfer.timer=setTimeout(()=>finish(new Error('file transfer timed out')),ms);
+  };
+  const finish=(err=null)=>{
+    if(settled)return;
+    settled=true;clearTimeout(transfer.timer);clearTimeout(pumpTimer);
+    if(cd?.transferWait===transfer)cd.transferWait=null;
+    try{if(typeof onDone==='function')onDone(err||null);}
+    catch(cbErr){console.error('file transfer callback failed:',cbErr);}
+  };
+  transfer.finish=finish;
+  if(cd){
+    if(cd.transferWait){
+      console.warn('A file transfer was already active for this connection');
+      if(typeof onDone==='function')onDone(new Error('another file transfer is active'));
+      return;
+    }
+    cd.transferWait=transfer;
+  }
+  const toBase64=(u8)=>{
+    let binary='';
+    // Avoid argument limits on large typed arrays.
+    for(let i=0;i<u8.length;i+=0x6000){
+      binary+=String.fromCharCode(...u8.subarray(i,Math.min(i+0x6000,u8.length)));
+    }
+    return btoa(binary);
+  };
+  const pump=()=>{
+    if(settled)return;
+    if(!conn.open){finish(new Error('connection closed'));return;}
+    try{
+      const dc=conn.dataChannel;
+      if(dc&&dc.readyState&&dc.readyState!=='open'){
+        finish(new Error('data channel is not open'));return;
+      }
+      if(dc&&Number(dc.bufferedAmount)>HIGH_WATER){pumpTimer=setTimeout(pump,25);return;}
+      if(idx===0){
+        conn.send({type:'file_start',fileName,mimeType,totalChunks:total,totalSize:bytes.byteLength,pid:pid??null,transferMode:'base64',transferKind,transferMeta});
+        resetWatchdog();
+      }
+      if(idx<total){
+        const start=idx*CHUNK_SIZE,end=Math.min(start+CHUNK_SIZE,bytes.byteLength);
+        const encoded=toBase64(bytes.subarray(start,end));
+        conn.send({type:'file_chunk',i:idx,d:encoded,pid:pid??null,transferMode:'base64',transferKind});
+        idx++;
+        resetWatchdog();
+        pumpTimer=setTimeout(pump,2);
+        return;
+      }
+      conn.send({type:'file_end',fileName,pid:pid??null,totalChunks:total,totalSize:bytes.byteLength,transferMode:'base64',transferKind});
+      // Keep the connection locked until the receiver confirms reconstruction.
+      resetWatchdog(120000);
+    }catch(err){
+      console.error('sendChunks failed:',err);
+      finish(err);
+    }
+  };
+  resetWatchdog();
+  pump();
+}
+
+/* ===== LISTENERS ===== */
+function updateSpinsPreview(){
+  const pt=parseInt(document.getElementById('newListenerPt').value)||0;
+  const cost=parseInt(document.getElementById('costPerSpin').value)||100;
+  if(pt<=0){document.getElementById('spinsPreview').textContent='　';return;}
+  const spins=Math.floor(pt/cost);
+  let text=`→ ${spins}回ガチャを引けます`;
+  const every=parseInt(document.getElementById('bonusEvery').value)||null;
+  const free=parseInt(document.getElementById('bonusFree').value)||null;
+  if(every>0&&free>0&&free<every)text+=`（${every}回ごとに${free}回無料あり）`;
+  document.getElementById('spinsPreview').textContent=text;
+}
+document.getElementById('newListenerPt').addEventListener('input',updateSpinsPreview);
+
+function addListener(){
+  const name=document.getElementById('newListenerName').value.trim();
+  const pt=parseInt(document.getElementById('newListenerPt').value);
+  const cost=parseInt(document.getElementById('costPerSpin').value)||100;
+  if(!name)return alert('リスナー名を入力してください');
+  if(isNaN(pt)||pt<0)return alert('Pt数を入力してください');
+  const spins=Math.floor(pt/cost);
+  if(state.listeners[name]){
+    state.listeners[name].remainingSpins+=spins;
+    toast(`${name} に ${spins}回追加しました`);
+    const l=state.listeners[name];
+    if(l.peerId&&state.connections[l.peerId])
+      state.connections[l.peerId].conn.send({type:'spins_update',remainingSpins:l.remainingSpins});
+  }else{
+    const pin=state.pinEnabled?genPin():null;
+    state.listeners[name]={remainingSpins:spins,peerId:null,spinsUsed:0,pin,wonPrizeIds:[]};
+    toast(`${name} を登録しました（${spins}回）`);
+  }
+  document.getElementById('newListenerName').value='';
+  document.getElementById('newListenerPt').value='';
+  document.getElementById('spinsPreview').textContent='　';
+  renderListeners();updateStats();saveState();
+}
+
+function removeListener(name){
+  if(!confirm(`${name} を削除しますか？`))return;
+  const l=state.listeners[name];
+  if(l&&l.peerId&&state.connections[l.peerId])state.connections[l.peerId].conn.close();
+  delete state.listeners[name];renderListeners();updateStats();saveState();
+}
+
+function resetAllSpins(){
+  if(!confirm('全リスナーの残り回数を0にリセットしますか？'))return;
+  Object.keys(state.listeners).forEach(name=>{
+    state.listeners[name].remainingSpins=0;
+    const l=state.listeners[name];
+    if(l.peerId&&state.connections[l.peerId])
+      state.connections[l.peerId].conn.send({type:'spins_update',remainingSpins:0});
+  });
+  renderListeners();saveState();toast('全リスナーの回数をリセットしました');
+}
+
+function renderListeners(){
+  const wrap=document.getElementById('listenerTableWrap');
+  const names=Object.keys(state.listeners);
+  if(!names.length){wrap.innerHTML='<div class="empty">リスナーが登録されていません</div>';return;}
+  const bonusOn=state.bonusEvery>0&&state.bonusFree>0&&state.bonusFree<state.bonusEvery;
+  const showPin=state.pinEnabled;
+  // PINなしリスナーが残っていたら警告
+  const noPinCount=showPin?names.filter(n=>!state.listeners[n].pin).length:0;
+  const warning=noPinCount?`<div class="error-note">PIN未設定のリスナーが${noPinCount}名います。削除して再登録してください。</div>`:'';
+  wrap.innerHTML=warning+`<table class="tbl"><thead><tr><th>リスナー名</th><th>残り回数</th>${bonusOn?'<th>次ボーナス</th>':''}${showPin?'<th>PIN</th>':''}<th>状態</th><th></th></tr></thead><tbody>
+    ${names.map(n=>{const l=state.listeners[n];const on=l.peerId&&state.connections[l.peerId];
+      const toNext=bonusOn?(state.bonusEvery-((l.spinsUsed||0)%state.bonusEvery)):null;
+      const safeN=esc(n).replace(/'/g,"\\'");
+      const pinCell=showPin?`<td><div class="flex gap-4" style="align-items:center;">
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:0.1em;color:${l.pin?'var(--cyan)':'var(--red)'};">${l.pin||'未設定'}</span>
+        ${l.pin?`<button class="btn btn-ghost btn-sm" onclick="copyPin('${safeN}')">コピー</button>`:''}
+      </div></td>`:'';
+      return`<tr><td>${esc(n)}</td><td><span class="spins-badge">${l.remainingSpins}回</span></td>
+        ${bonusOn?`<td><span style="font-size:11px;color:var(--gold);">あと${toNext}回</span></td>`:''}
+        ${pinCell}
+        <td>${on?'<span class="status-on">接続中</span>':'<span class="status-off">未接続</span>'}</td>
+        <td><div class="flex gap-4">
+          <button class="btn btn-ghost btn-sm" onclick="resetListenerSpins('${safeN}')">回数リセット</button>
+          <button class="btn btn-danger btn-sm" onclick="removeListener('${safeN}')">削除</button>
+        </div></td></tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+function resetListenerSpins(name){
+  const l=state.listeners[name];if(!l)return;
+  if(!confirm(`${name} の残り回数を0にリセットしますか？`))return;
+  l.remainingSpins=0;
+  if(l.peerId&&state.connections[l.peerId])
+    state.connections[l.peerId].conn.send({type:'spins_update',remainingSpins:0});
+  renderListeners();saveState();toast(`${name} の回数をリセットしました`);
+}
+
+/* ===== LOG ===== */
+function addLog(name,result,quiet){
+  state.winCount++;
+  const t=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  state.log.unshift({name,rarity:result.rarity,prize:result.prize,t,lastOneAwarded:!!result.lastOneAwarded});
+  if(!quiet){renderLog();updateStats();}
+}
+
+function renderLog(){
+  const el=document.getElementById('winLog');
+  const filterEl=document.getElementById('logFilter');
+  const prevVal=filterEl.value;
+  const namesInLog=[...new Set(state.log.map(e=>e.name))];
+  const allNames=[...new Set([...Object.keys(state.listeners),...namesInLog])].sort((a,b)=>a.localeCompare(b,'ja'));
+  filterEl.innerHTML=`<option value="">全員 (${state.log.length}件)</option>`+
+    allNames.map(n=>{
+      const c=state.log.filter(e=>e.name===n).length;
+      return `<option value="${esc(n)}">${esc(n)}（${c}件）</option>`;
+    }).join('');
+  if([...filterEl.options].some(o=>o.value===prevVal))filterEl.value=prevVal;
+
+  const filtered=filterEl.value?state.log.filter(e=>e.name===filterEl.value):state.log;
+
+  if(!filtered.length){
+    el.innerHTML=`<div class="empty">${filterEl.value?'このリスナーの当選履歴はありません':'まだ当選者がいません'}</div>`;return;
+  }
+
+  let summaryHtml='';
+  if(filterEl.value){
+    const counts={};
+    filtered.forEach(e=>{const k=e.rarity.name;counts[k]=counts[k]||{count:0,color:e.rarity.color};counts[k].count++;});
+    summaryHtml=`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">`+
+      Object.entries(counts).map(([n,{count,color}])=>
+        `<span style="font-weight:900;font-size:12px;padding:3px 9px;border-radius:10px;background:${color}22;color:${color};border:1px solid ${color}44;">${esc(n)} ×${count}</span>`).join('')+
+      `</div>`;
+  }
+
+  el.innerHTML=summaryHtml+filtered.slice(0,300).map(e=>`
+    <div class="log-item" style="border-left-color:${e.rarity.color}">
+      <span class="log-time">${e.t}</span>
+      <span style="font-weight:900;font-size:12px;padding:2px 7px;border-radius:4px;background:${e.rarity.color}22;color:${e.rarity.color};border:1px solid ${e.rarity.color}44;">${esc(e.rarity.name)}</span>
+      <span>${esc(e.name)}</span>
+      <span>→ <span class="log-prize-name">${esc(e.prize.name)}</span>${e.lastOneAwarded?'<span class="prize-tag" style="background:#ffc85722;color:#ffc857;margin-left:4px;">ラストワン賞</span>':''}</span>
+    </div>`).join('')+(filtered.length>300?'<div class="empty">新しい300件を表示中（CSVには全件が入ります）</div>':'');
+}
+
+function clearLog(){state.log=[];state.winCount=0;document.getElementById('logFilter').value='';renderLog();updateStats();saveState();}
+
+function exportCSV(){
+  if(!state.log.length)return alert('ログがありません');
+  const rows=[['時刻','リスナー名','レアリティ','景品名','ラストワン賞']];
+  [...state.log].reverse().forEach(e=>{
+    rows.push([e.t,e.name,e.rarity.name,e.prize.name,e.lastOneAwarded?'あり':'']);
+  });
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='gacha-log-'+new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ===== UI ===== */
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  const pane=document.getElementById('tab-'+name);
+  if(pane)pane.classList.add('active');
+}
+
+function switchMobTab(name){
+  document.querySelectorAll('.mob-btn').forEach(b=>b.classList.remove('active'));
+  const mobBtn=document.getElementById('mobt-'+name);
+  if(mobBtn){mobBtn.classList.add('active');try{mobBtn.scrollIntoView({inline:'center',block:'nearest'});}catch(e){}}
+  const sidebar=document.querySelector('.sidebar');
+  const main=document.querySelector('.main');
+  if(name==='settings'){
+    sidebar.classList.add('mob-active');
+    main.classList.remove('mob-active');
+  }else{
+    sidebar.classList.remove('mob-active');
+    main.classList.add('mob-active');
+    const deskBtn=document.querySelector(`.tab-btn[data-tab="${name}"]`);
+    switchTab(name,deskBtn);
+  }
+}
+
+function updateStats(){
+  document.getElementById('statConn').textContent=Object.keys(state.connections).length;
+  document.getElementById('statReg').textContent=Object.keys(state.listeners).length;
+  document.getElementById('statR').textContent=state.rarities.length;
+  document.getElementById('statWins').textContent=state.winCount;
+}
+
+/* ===== INDEXEDDB + LOCALSTORAGE ===== */
+const LS_KEY='gacha-host-v2';
+const BALANCE_KEY='gacha-host-balances-v1';
+const DB_NAME='gacha-host-db';
+const DB_STORE='files';
+const EVENT_STORE='events';
+let _db=null;
+
+function openDB(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open(DB_NAME,2);
+    req.onupgradeneeded=e=>{
+      const db=e.target.result;
+      if(!db.objectStoreNames.contains(DB_STORE))db.createObjectStore(DB_STORE,{keyPath:'id'});
+      if(!db.objectStoreNames.contains(EVENT_STORE))db.createObjectStore(EVENT_STORE,{keyPath:'id'});
+    };
+    req.onsuccess=e=>{_db=e.target.result;res(_db);};
+    req.onerror=e=>rej(e);
+  });
+}
+function dbSaveFile(id,ab,name,mimeType){
+  return new Promise((res,rej)=>{const tx=_db.transaction(DB_STORE,'readwrite');
+    tx.objectStore(DB_STORE).put({id,arrayBuffer:ab,name,mimeType});tx.oncomplete=res;tx.onerror=rej;});
+}
+function dbLoadFile(id){
+  return new Promise((res,rej)=>{const tx=_db.transaction(DB_STORE,'readonly');
+    const req=tx.objectStore(DB_STORE).get(id);req.onsuccess=e=>res(e.target.result||null);req.onerror=rej;});
+}
+function dbDeleteFile(id){
+  return new Promise((res,rej)=>{const tx=_db.transaction(DB_STORE,'readwrite');
+    tx.objectStore(DB_STORE).delete(id);tx.oncomplete=res;tx.onerror=rej;});
+}
+function dbClearAll(){
+  return new Promise((res,rej)=>{const tx=_db.transaction(DB_STORE,'readwrite');
+    tx.objectStore(DB_STORE).clear();tx.oncomplete=res;tx.onerror=rej;});
+}
+
+function saveListenerBalances(){
+  // Keep the authoritative balances in a small, independent localStorage record.
+  // This must be written before sending batch results to guests.
+  try{
+    const balances={};
+    for(const [name,l] of Object.entries(state.listeners||{})){
+      balances[name]={
+        remainingSpins:Math.max(0,Number(l.remainingSpins)||0),
+        spinsUsed:Math.max(0,Number(l.spinsUsed)||0),
+        wonPrizeIds:Array.isArray(l.wonPrizeIds)?l.wonPrizeIds:[],
+        pin:l.pin||null
+      };
+    }
+    localStorage.setItem(BALANCE_KEY,JSON.stringify({version:1,balances,savedAt:Date.now()}));
+    return true;
+  }catch(e){
+    console.error('Could not persist listener balances',e);
+    return false;
+  }
+}
+
+function mergeSavedBalances(listeners){
+  try{
+    const raw=localStorage.getItem(BALANCE_KEY);
+    if(!raw)return listeners;
+    const saved=JSON.parse(raw);
+    const balances=saved&&saved.balances;
+    if(!balances||typeof balances!=='object')return listeners;
+    for(const [name,b] of Object.entries(balances)){
+      if(!listeners[name]||!b||!Number.isFinite(Number(b.remainingSpins)))continue;
+      listeners[name].remainingSpins=Math.max(0,Number(b.remainingSpins));
+      listeners[name].spinsUsed=Math.max(0,Number(b.spinsUsed)||0);
+      if(Array.isArray(b.wonPrizeIds))listeners[name].wonPrizeIds=b.wonPrizeIds;
+      if(b.pin)listeners[name].pin=b.pin;
+    }
+    return listeners;
+  }catch(e){console.warn('Could not restore listener balance ledger',e);return listeners;}
+}
+
+function saveState(){
+  // Persist balances independently before the larger settings/log blob.
+  saveListenerBalances();
+  try{
+    const data={
+      costPerSpin:parseInt(document.getElementById('costPerSpin').value)||100,
+      bonusEvery:state.bonusEvery||null,
+      bonusFree:state.bonusFree||null,
+      pinEnabled:state.pinEnabled,uniquePerListener:state.uniquePerListener,features:{...state.features},
+      lastOneEnabled:state.lastOneEnabled,lastOneName:state.lastOneName,lastOneText:state.lastOneText,lastOneClaimed:state.lastOneClaimed,
+      eventGauge:{...state.eventGauge},winCount:state.winCount,
+      log:state.log.slice(0,300).map(e=>({name:e.name,t:e.t,rarity:{name:e.rarity?.name||'',color:e.rarity?.color||'#888888'},prize:{id:e.prize?.id||e.prize?.pid||null,name:e.prize?.name||'',text:e.prize?.text||''},lastOneAwarded:!!e.lastOneAwarded})),
+      rarities:state.rarities.map(r=>({
+        id:r.id,name:r.name,color:r.color,rate:r.rate,
+        prizes:r.prizes.map(p=>({
+          id:p.id,name:p.name,text:p.text,stock:p.stock===undefined?null:p.stock,
+          fileId:p.file?('f-'+p.id):null,
+          fileName:p.file?.name||null,fileMime:p.file?.mimeType||null
+        }))
+      })),
+      // peerId は保存しない（起動のたびに接続し直すため）
+      listeners:Object.fromEntries(
+        Object.entries(state.listeners).map(([k,v])=>[k,{remainingSpins:v.remainingSpins,spinsUsed:v.spinsUsed||0,pin:v.pin||null,wonPrizeIds:v.wonPrizeIds||[]}])
+      )
+    };
+    localStorage.setItem(LS_KEY,JSON.stringify(data));
+  }catch(e){console.warn('saveState failed:',e);}
+}
+
+function initDefaultRarities(){
+  state.rarities=[
+    {id:Date.now()+1,name:'UR', color:'#FF0080',rate:1, prizes:[]},
+    {id:Date.now()+2,name:'SSR',color:'#FFD700',rate:4, prizes:[]},
+    {id:Date.now()+3,name:'SR', color:'#AA44FF',rate:10,prizes:[]},
+    {id:Date.now()+4,name:'R',  color:'#4488FF',rate:25,prizes:[]},
+    {id:Date.now()+5,name:'N',  color:'#888888',rate:60,prizes:[]},
+  ];
+  renderRarities();updateStats();
+}
+
+async function loadState(){
+  try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(!raw){initDefaultRarities();return;}
+    const data=JSON.parse(raw);
+    document.getElementById('costPerSpin').value=data.costPerSpin||100;
+    state.costPerSpin=data.costPerSpin||100;
+    state.bonusEvery=data.bonusEvery||null;
+    state.bonusFree=data.bonusFree||null;
+    if(state.bonusEvery&&state.bonusFree&&state.bonusFree>=state.bonusEvery)state.bonusFree=null;
+    document.getElementById('bonusEvery').value=state.bonusEvery||'';
+    document.getElementById('bonusFree').value=state.bonusFree||'';
+    document.getElementById('bonusError').style.display='none';
+    state.pinEnabled=data.pinEnabled||false;
+    state.features={inventory:data.features?.inventory!==false,unique:data.features?.unique===true,lastOne:data.features?.lastOne!==false,eventPresets:data.features?.eventPresets!==false,eventGauge:data.features?.eventGauge!==false};
+    state.uniquePerListener=!!data.uniquePerListener;
+    state.lastOneEnabled=!!data.lastOneEnabled;state.lastOneName=data.lastOneName||'ラストワン賞';state.lastOneText=data.lastOneText||'';state.lastOneClaimed=!!data.lastOneClaimed;
+    state.eventGauge={goal:Number(data.eventGauge?.goal)||100,count:Number(data.eventGauge?.count)||0,title:data.eventGauge?.title||'みんなで目標達成！',message:data.eventGauge?.message||'',completed:!!data.eventGauge?.completed,completionId:Number(data.eventGauge?.completionId)||0,file:data.eventGauge?.file?.name?{id:'gauge-reward',name:data.eventGauge.file.name,mimeType:data.eventGauge.file.mimeType||'application/octet-stream',updatedAt:Number(data.eventGauge.file.updatedAt)||0}:null};
+    if(state.eventGauge.file){const storedGaugeFile=await dbLoadFile('gauge-reward').catch(()=>null);if(storedGaugeFile)state.eventGauge.file={...state.eventGauge.file,name:storedGaugeFile.name,mimeType:storedGaugeFile.mimeType||state.eventGauge.file.mimeType};else state.eventGauge.file=null;}
+    state.log=Array.isArray(data.log)?data.log:[];state.winCount=Number(data.winCount)||state.log.length;
+    document.getElementById('uniquePerListener').checked=state.uniquePerListener;
+    document.getElementById('lastOneEnabled').checked=state.lastOneEnabled;
+    document.getElementById('lastOneName').value=state.lastOneName;document.getElementById('lastOneText').value=state.lastOneText;
+    document.getElementById('gaugeGoal').value=state.eventGauge.goal;document.getElementById('gaugeTitle').value=state.eventGauge.title;document.getElementById('gaugeMessage').value=state.eventGauge.message;
+    document.getElementById('pinToggleTrack').classList.toggle('on',state.pinEnabled);
+    document.getElementById('pinToggleLabel').textContent=state.pinEnabled?'オン':'オフ';
+    state.rarities=await Promise.all((data.rarities||[]).map(async r=>({
+      ...r,
+      prizes:await Promise.all((r.prizes||[]).map(async p=>{
+        let file=null;
+        if(p.fileId){
+          const stored=await dbLoadFile(p.fileId).catch(()=>null);
+          file=stored?{name:stored.name,mimeType:stored.mimeType,arrayBuffer:stored.arrayBuffer}:null;
+        }
+        return{id:p.id,name:p.name,text:p.text,file,stock:p.stock===undefined?null:p.stock};
+      }))
+    })));
+    state.listeners=Object.fromEntries(
+      Object.entries(data.listeners||{}).map(([k,v])=>[k,{remainingSpins:v.remainingSpins,spinsUsed:v.spinsUsed||0,pin:v.pin||null,peerId:null,wonPrizeIds:Array.isArray(v.wonPrizeIds)?v.wonPrizeIds:[]}])
+    );
+    // The independent balance ledger is newer/more authoritative than the older full-state blob.
+    state.listeners=mergeSavedBalances(state.listeners);
+    saveListenerBalances();
+    renderRarities();renderListeners();renderLog();updateStats();renderHostGauge();
+    if(state.rarities.length)toast('前回の設定を復元しました');
+  }catch(e){console.warn('loadState failed:',e);}
+}
+
+async function resetAll(){
+  if(!confirm('すべての設定・景品ファイル・リスナー情報をリセットしますか？'))return;
+  localStorage.removeItem(LS_KEY);
+  localStorage.removeItem(BALANCE_KEY);
+  await dbClearAll().catch(()=>{});
+  state.rarities=[];state.listeners={};state.log=[];state.winCount=0;
+  state.bonusEvery=null;state.bonusFree=null;state.pinEnabled=false;
+  state.features={inventory:true,unique:true,lastOne:true,eventPresets:true,eventGauge:true};state.uniquePerListener=false;state.lastOneEnabled=false;state.lastOneName='ラストワン賞';state.lastOneText='';state.lastOneClaimed=false;
+  state.eventGauge={goal:100,count:0,title:'みんなで目標達成！',message:'',completed:false};
+  await clearAllEventPresets().catch(()=>{});
+  document.getElementById('uniquePerListener').checked=false;document.getElementById('lastOneEnabled').checked=false;
+  document.getElementById('lastOneName').value=state.lastOneName;document.getElementById('lastOneText').value='';
+  document.getElementById('gaugeGoal').value=100;document.getElementById('gaugeTitle').value=state.eventGauge.title;document.getElementById('gaugeMessage').value='';
+  document.getElementById('costPerSpin').value=100;
+  document.getElementById('bonusEvery').value='';
+  document.getElementById('bonusFree').value='';
+  document.getElementById('bonusError').style.display='none';
+  document.getElementById('pinToggleTrack').classList.remove('on');
+  document.getElementById('pinToggleLabel').textContent='オフ';
+  renderRarities();renderListeners();renderLog();updateStats();renderHostGauge();renderFeatureToggles();refreshEventPresetList();saveState();
+  toast('リセットしました');
+}
+
+function dbGetAllEventPresets(){
+  return new Promise((res,rej)=>{const tx=_db.transaction(EVENT_STORE,'readonly');const req=tx.objectStore(EVENT_STORE).getAll();req.onsuccess=()=>res(req.result||[]);req.onerror=()=>rej(req.error);});
+}
+function dbGetEventPreset(id){
+  return new Promise((res,rej)=>{const tx=_db.transaction(EVENT_STORE,'readonly');const req=tx.objectStore(EVENT_STORE).get(id);req.onsuccess=()=>res(req.result||null);req.onerror=()=>rej(req.error);});
+}
+function dbPutEventPreset(record){
+  return new Promise((res,rej)=>{const tx=_db.transaction(EVENT_STORE,'readwrite');tx.objectStore(EVENT_STORE).put(record);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});
+}
+function dbDeleteEventPreset(id){
+  return new Promise((res,rej)=>{const tx=_db.transaction(EVENT_STORE,'readwrite');tx.objectStore(EVENT_STORE).delete(id);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});
+}
+function clearAllEventPresets(){
+  return new Promise((res,rej)=>{const tx=_db.transaction(EVENT_STORE,'readwrite');tx.objectStore(EVENT_STORE).clear();tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});
+}
+async function captureEventConfig(){
+  const eventGauge={...state.eventGauge};
+  if(eventGauge.file?.id){
+    const stored=await dbLoadFile(eventGauge.file.id).catch(()=>null);
+    eventGauge.file=stored?{...eventGauge.file,name:stored.name,mimeType:stored.mimeType,arrayBuffer:stored.arrayBuffer?.slice(0)||null}:null;
+  }
+  return {
+    costPerSpin:parseInt(document.getElementById('costPerSpin').value)||100,
+    bonusEvery:parseInt(document.getElementById('bonusEvery').value)||null,bonusFree:parseInt(document.getElementById('bonusFree').value)||null,
+    pinEnabled:state.pinEnabled,uniquePerListener:state.uniquePerListener,lastOneEnabled:state.lastOneEnabled,
+    lastOneName:state.lastOneName,lastOneText:state.lastOneText,lastOneClaimed:state.lastOneClaimed,
+    eventGauge,
+    rarities:state.rarities.map(r=>({id:r.id,name:r.name,color:r.color,rate:r.rate,prizes:r.prizes.map(p=>({id:p.id,name:p.name,text:p.text,stock:p.stock===undefined?null:p.stock,file:p.file?{name:p.file.name,mimeType:p.file.mimeType,arrayBuffer:p.file.arrayBuffer?.slice(0)||null}:null}))}))
+  };
+}
+async function refreshEventPresetList(preferredId=''){
+  const select=document.getElementById('eventPresetSelect');if(!_db||!select)return;
+  const presets=await dbGetAllEventPresets().catch(()=>[]);
+  presets.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  select.innerHTML=presets.length?presets.map(p=>`<option value="${esc(p.id)}">${esc(p.name)} · ${new Date(p.updatedAt||0).toLocaleDateString('ja-JP')}</option>`).join(''):'<option value="">保存済みイベントなし</option>';
+  if(preferredId&&presets.some(p=>p.id===preferredId))select.value=preferredId;
+}
+async function saveEventPresetFromUI(){
+  if(!featureEnabled('eventPresets'))return alert('イベント保存・切り替え機能はオフです');
+  const name=document.getElementById('eventPresetName').value.trim();if(!name)return alert('イベント名を入力してください');
+  if(!_db)return alert('データベースの準備中です。少し待ってからお試しください');
+  try{
+    const presets=await dbGetAllEventPresets();const existing=presets.find(p=>p.name.toLocaleLowerCase()===name.toLocaleLowerCase());
+    const id=existing?.id||('event-'+Date.now());
+    const data=await captureEventConfig();
+    await dbPutEventPreset({id,name,updatedAt:Date.now(),data});
+    document.getElementById('eventPresetName').value=name;await refreshEventPresetList(id);toast(`「${name}」を保存しました（景品ファイル含む）`);
+  }catch(e){console.error('save event preset failed',e);alert('イベントの保存に失敗しました。空き容量を確認してください');}
+}
+async function loadEventPresetFromUI(){
+  if(!featureEnabled('eventPresets'))return alert('イベント保存・切り替え機能はオフです');
+  const id=document.getElementById('eventPresetSelect').value;if(!id)return alert('読み込むイベントを選択してください');
+  if(!confirm('現在のガチャ設定・在庫を選択したイベントの内容に切り替えますか？リスナー登録と残り回数は維持されます。'))return;
+  try{
+    const record=await dbGetEventPreset(id);if(!record?.data)throw new Error('preset missing');const d=record.data;
+    state.costPerSpin=d.costPerSpin||100;document.getElementById('costPerSpin').value=state.costPerSpin;
+    state.bonusEvery=d.bonusEvery||null;state.bonusFree=d.bonusFree||null;
+    document.getElementById('bonusEvery').value=state.bonusEvery||'';document.getElementById('bonusFree').value=state.bonusFree||'';
+    state.pinEnabled=!!d.pinEnabled;document.getElementById('pinToggleTrack').classList.toggle('on',state.pinEnabled);document.getElementById('pinToggleLabel').textContent=state.pinEnabled?'オン':'オフ';
+    state.uniquePerListener=!!d.uniquePerListener;state.lastOneEnabled=!!d.lastOneEnabled;state.lastOneName=d.lastOneName||'ラストワン賞';state.lastOneText=d.lastOneText||'';state.lastOneClaimed=!!d.lastOneClaimed;
+    document.getElementById('uniquePerListener').checked=state.uniquePerListener;document.getElementById('lastOneEnabled').checked=state.lastOneEnabled;
+    document.getElementById('lastOneName').value=state.lastOneName;document.getElementById('lastOneText').value=state.lastOneText;
+    const presetGaugeFile=d.eventGauge?.file||null;
+    if(presetGaugeFile?.arrayBuffer&&presetGaugeFile.name)await dbSaveFile('gauge-reward',presetGaugeFile.arrayBuffer,presetGaugeFile.name,presetGaugeFile.mimeType||'application/octet-stream');
+    else await dbDeleteFile('gauge-reward').catch(()=>{});
+    const restoredGaugeFile=presetGaugeFile?.arrayBuffer&&presetGaugeFile.name?{id:'gauge-reward',name:presetGaugeFile.name,mimeType:presetGaugeFile.mimeType||'application/octet-stream',updatedAt:Number(presetGaugeFile.updatedAt)||Date.now()}:null;
+    state.eventGauge={goal:Number(d.eventGauge?.goal)||100,count:Number(d.eventGauge?.count)||0,title:d.eventGauge?.title||'みんなで目標達成！',message:d.eventGauge?.message||'',completed:!!d.eventGauge?.completed,completionId:Number(d.eventGauge?.completionId)||0,file:restoredGaugeFile};
+    document.getElementById('gaugeGoal').value=state.eventGauge.goal;document.getElementById('gaugeTitle').value=state.eventGauge.title;document.getElementById('gaugeMessage').value=state.eventGauge.message;
+    state.rarities=(d.rarities||[]).map(r=>({...r,prizes:(r.prizes||[]).map(p=>({...p,file:p.file?{name:p.file.name,mimeType:p.file.mimeType,arrayBuffer:p.file.arrayBuffer?.slice(0)||null}:null,stock:p.stock===undefined?null:p.stock}))}));
+    // プリセットに保存されたファイル本体を通常の景品DBにも復元し、再読込後も消えないようにする。
+    for(const rarity of state.rarities)for(const prize of rarity.prizes){if(prize.file?.arrayBuffer)await dbSaveFile('f-'+prize.id,prize.file.arrayBuffer,prize.file.name,prize.file.mimeType);}
+    // 重複制限は読み込んだイベントごとに管理する。
+    Object.values(state.listeners).forEach(listener=>{listener.wonPrizeIds=[];});
+    renderRarities();renderListeners();renderLog();updateStats();renderHostGauge();saveState();broadcastSettingsToGuests();broadcastEventGauge();
+    Object.values(state.connections).forEach(cd=>{try{cd.conn.send({type:'catalog_update',prizeCatalog:getPrizeCatalog()});cd.conn.send({type:'pin_setting',pinEnabled:state.pinEnabled});}catch(e){}});
+    document.getElementById('eventPresetName').value=record.name;toast(`「${record.name}」を読み込みました`);
+  }catch(e){console.error('load event preset failed',e);alert('イベントを読み込めませんでした');}
+}
+async function deleteEventPresetFromUI(){
+  if(!featureEnabled('eventPresets'))return alert('イベント保存・切り替え機能はオフです');
+  const id=document.getElementById('eventPresetSelect').value;if(!id)return alert('削除するイベントを選択してください');
+  const record=await dbGetEventPreset(id).catch(()=>null);if(!record)return;
+  if(!confirm(`「${record.name}」を保存一覧から削除しますか？`))return;
+  await dbDeleteEventPreset(id);await refreshEventPresetList();toast('保存済みイベントを削除しました');
+}
+function renderHostGauge(){
+  const g=state.eventGauge||{goal:100,count:0,title:'イベントゲージ'};
+  const goal=Math.max(1,Number(g.goal)||100),count=Math.max(0,Number(g.count)||0),pct=Math.min(100,count/goal*100);
+  const titleEl=document.getElementById('hostGaugeTitle');if(!titleEl)return;
+  titleEl.textContent=g.title||'全員参加型イベント';document.getElementById('hostGaugeCount').textContent=`${count} / ${goal}`;
+  document.getElementById('hostGaugeFill').style.width=pct+'%';
+  document.getElementById('hostGaugeStatus').textContent=g.completed?'目標達成済み！':`あと${Math.max(0,goal-count)}回で達成`;
+  const rewardStatus=document.getElementById('gaugeRewardStatus');
+  if(rewardStatus){
+    rewardStatus.textContent=g.file?.name
+      ?`登録済み：${g.file.name}${g.completed?'（目標達成済み。接続中のリスナーへ配布します）':'（目標達成時に配布）'}`
+      :'未登録。目標達成時に接続中のリスナーへ配布します。';
+  }
+  const rewardLabel=document.getElementById('gaugeRewardFileLabel');
+  if(rewardLabel&&!document.getElementById('gaugeRewardInput')?.files?.length){
+    rewardLabel.textContent=g.file?.name?`登録済み：${g.file.name}`:'ファイルを選択（なくてもOK）';
+    rewardLabel.classList.toggle('has-file',!!g.file?.name);
+  }
+}
+
+async function saveGaugeRewardFile(){
+  const input=document.getElementById('gaugeRewardInput');
+  const file=input?.files?.[0];
+  if(!file)return alert('登録する報酬ファイルを選択してください');
+  if(!_db)return alert('データベースの準備中です。少し待ってからお試しください');
+  const btn=document.querySelector('#eventGaugeCard button[onclick="saveGaugeRewardFile()"]');
+  if(btn){btn.disabled=true;btn.textContent='保存中...';}
+  try{
+    const mimeType=file.type||'application/octet-stream';
+    const arrayBuffer=await stripExif(file);
+    await dbSaveFile('gauge-reward',arrayBuffer,file.name,mimeType);
+    state.eventGauge.file={id:'gauge-reward',name:file.name,mimeType,updatedAt:Date.now()};
+    saveState();renderHostGauge();broadcastEventGauge(false);
+    input.value='';updateFileLabel(input,'gaugeRewardFileLabel');renderHostGauge();
+    toast('目標達成報酬ファイルを登録しました');
+  }catch(err){
+    console.error('save gauge reward failed:',err);
+    alert('報酬ファイルを保存できませんでした。ブラウザの空き容量とファイル形式を確認してください。');
+  }finally{if(btn){btn.disabled=false;btn.textContent='報酬ファイルを登録';}}
+}
+
+async function removeGaugeRewardFile(){
+  if(!state.eventGauge.file?.name)return toast('報酬ファイルは登録されていません');
+  if(!confirm('目標達成報酬ファイルを外しますか？'))return;
+  await dbDeleteFile('gauge-reward').catch(()=>{});
+  state.eventGauge.file=null;
+  saveState();renderHostGauge();broadcastEventGauge(false);
+  const input=document.getElementById('gaugeRewardInput');if(input)input.value='';
+  updateFileLabel(input,'gaugeRewardFileLabel');renderHostGauge();
+  toast('目標達成報酬ファイルを外しました');
+}
+function applyGaugeSettings(){
+  const goal=Number(document.getElementById('gaugeGoal').value),title=document.getElementById('gaugeTitle').value.trim()||'みんなで目標達成！';
+  if(!Number.isInteger(goal)||goal<1)return alert('目標回数は1以上の整数にしてください');
+  const wasCompleted=!!state.eventGauge.completed;
+  state.eventGauge.goal=goal;state.eventGauge.title=title;state.eventGauge.message=document.getElementById('gaugeMessage').value.trim();
+  state.eventGauge.completed=state.eventGauge.count>=goal;
+  const newlyCompleted=!wasCompleted&&state.eventGauge.completed;
+  if(newlyCompleted)state.eventGauge.completionId=(Number(state.eventGauge.completionId)||0)+1;
+  renderHostGauge();saveState();broadcastEventGauge(newlyCompleted);toast('イベントゲージを更新しました');
+}
+function resetEventGauge(){
+  if(!confirm('共有ゲージの累計回数を0に戻しますか？'))return;
+  state.eventGauge.count=0;state.eventGauge.completed=false;renderHostGauge();saveState();broadcastEventGauge(false);toast('イベントゲージをリセットしました');
+}
+function broadcastEventGauge(announce=false){
+  const enabled=featureEnabled('eventGauge');
+  const payload={type:'event_gauge',enabled,eventGauge:{...state.eventGauge,announce:!!announce}};
+  Object.values(state.connections).forEach(cd=>{try{if(cd.conn.open)cd.conn.send(payload);}catch(e){}});
+  if(enabled&&state.eventGauge.completed&&state.eventGauge.file)broadcastGaugeRewardToAll();
+}
+function broadcastGaugeRewardToAll(){
+  Object.values(state.connections).forEach(cd=>sendGaugeRewardToConnection(cd));
+}
+function gaugeRewardStamp(g=state.eventGauge){
+  return `${Number(g?.completionId)||0}:${Number(g?.file?.updatedAt)||0}:${g?.file?.name||''}`;
+}
+function sendGaugeRewardToConnection(cd){
+  const g=state.eventGauge;
+  if(!cd?.conn?.open||!featureEnabled('eventGauge')||!g?.completed||!g.file?.name)return;
+  const stamp=gaugeRewardStamp(g);
+  if(cd.gaugeRewardSentFor===stamp||cd.pendingGaugeRewardStamp===stamp)return;
+  if(cd.sending||cd.transferWait){cd.pendingGaugeReward=true;cd.pendingGaugeRewardStamp=stamp;return;}
+  cd.pendingGaugeReward=false;cd.pendingGaugeRewardStamp=null;
+  dbLoadFile(g.file.id||'gauge-reward').then(record=>{
+    if(!cd.conn.open)return;
+    if(!record?.arrayBuffer){
+      try{cd.conn.send({type:'gauge_reward_error',message:'ホスト側の報酬ファイルが見つかりません。管理画面で再登録してください。'});}catch(e){}
+      return;
+    }
+    if(!state.eventGauge.completed||!state.eventGauge.file)return;
+    const currentStamp=gaugeRewardStamp();
+    if(currentStamp!==stamp){sendGaugeRewardToConnection(cd);return;}
+    if(cd.sending||cd.transferWait){cd.pendingGaugeReward=true;cd.pendingGaugeRewardStamp=stamp;return;}
+    const completionId=Number(state.eventGauge.completionId)||0;
+    const fileVersion=Number(state.eventGauge.file.updatedAt)||0;
+    const transferId=`gauge-reward-${completionId}-${fileVersion}`;
+    cd.sending=true;
+    sendChunks(cd.conn,record.arrayBuffer,record.name||g.file.name,record.mimeType||g.file.mimeType||'application/octet-stream',transferId,err=>{
+      cd.sending=false;
+      if(err){
+        console.warn('community goal reward transfer failed:',err);
+        try{if(cd.conn.open)cd.conn.send({type:'gauge_reward_error',message:'目標達成報酬の受信に失敗しました。報酬ボタンから再試行してください。'});}catch(e){}
+      }else cd.gaugeRewardSentFor=stamp;
+      flushPendingGaugeReward(cd);
+    },'gauge_reward',{completionId,fileVersion});
+  }).catch(err=>{
+    console.warn('could not load community goal reward file:',err);
+    try{if(cd.conn.open)cd.conn.send({type:'gauge_reward_error',message:'目標達成報酬ファイルを読み込めませんでした。ホスト側でファイルを登録し直してください。'});}catch(e){}
+  });
+}
+function flushPendingGaugeReward(cd){
+  if(!cd?.pendingGaugeReward)return;
+  cd.pendingGaugeReward=false;cd.pendingGaugeRewardStamp=null;
+  sendGaugeRewardToConnection(cd);
+}
+function recordEventDraws(count){
+  if(!featureEnabled('eventGauge')||!Number.isFinite(count)||count<=0)return;
+  const g=state.eventGauge;const before=g.count;g.count+=count;
+  const goal=Math.max(1,Number(g.goal)||100);const announce=!g.completed&&before<goal&&g.count>=goal;
+  if(g.count>=goal)g.completed=true;
+  if(announce)g.completionId=(Number(g.completionId)||0)+1;
+  renderHostGauge();broadcastEventGauge(announce);saveState();
+}
+
+function broadcastSettingsToGuests(){
+  const bonusActive=state.bonusEvery>0&&state.bonusFree>0&&state.bonusFree<state.bonusEvery;
+  Object.values(state.connections).forEach(cd=>{
+    cd.conn.send({type:'bonus_update',
+      bonusEvery:bonusActive?state.bonusEvery:null,
+      bonusFree:bonusActive?state.bonusFree:null,
+      costPerSpin:state.costPerSpin});
+  });
+}
+
+document.getElementById('costPerSpin').addEventListener('change',function(){
+  state.costPerSpin=parseInt(this.value)||100;
+  saveState();updateSpinsPreview();broadcastSettingsToGuests();
+});
+document.getElementById('lastOneName').addEventListener('change',applyPrizeRules);
+document.getElementById('lastOneText').addEventListener('change',applyPrizeRules);
+['gaugeGoal','gaugeTitle','gaugeMessage'].forEach(id=>document.getElementById(id).addEventListener('change',applyGaugeSettings));
+function applyBonusSettings(){
+  const every=parseInt(document.getElementById('bonusEvery').value)||null;
+  const free=parseInt(document.getElementById('bonusFree').value)||null;
+  const errEl=document.getElementById('bonusError');
+  if(every&&free&&free>=every){
+    errEl.style.display='block';
+    // free側を無効化（入力中は表示だけして保存はしない）
+    state.bonusEvery=every;state.bonusFree=null;
+  }else{
+    errEl.style.display='none';
+    state.bonusEvery=every;state.bonusFree=free;
+  }
+  saveState();updateSpinsPreview();renderListeners();broadcastSettingsToGuests();
+}
+document.getElementById('bonusEvery').addEventListener('input',applyBonusSettings);
+document.getElementById('bonusFree').addEventListener('input',applyBonusSettings);
+
+function toast(msg){
+  const el=document.createElement('div');el.className='toast';
+  el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),2200);
+}
+
+updateStats();
+renderLog();
+openDB().then(async()=>{await loadState();await refreshEventPresetList();renderHostGauge();renderFeatureToggles();}).catch(e=>console.error('DB open failed:',e));
+if(window.innerWidth<768){
+  document.querySelector('.sidebar').classList.add('mob-active');
+}
+</script>
+<div class="image-preview-modal" id="imagePreviewModal" role="dialog" aria-modal="true" aria-label="画像プレビュー" aria-hidden="true" onclick="if(event.target===this)closeImagePreview()">
+  <button type="button" class="image-preview-close" onclick="closeImagePreview()" aria-label="閉じる">×</button>
+  <img id="imagePreviewModalImg" alt="画像プレビュー拡大表示">
+</div>
 </body>
 </html>
